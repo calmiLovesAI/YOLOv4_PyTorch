@@ -1,6 +1,7 @@
 import torch
 
 from configuration import Config
+from core.loss import YoloLoss
 
 
 class PostProcessing:
@@ -11,7 +12,8 @@ class PostProcessing:
         for i, feature in enumerate(yolo_outputs):
             bbox = generate_prediction(feature=feature, feature_index=i)
             bboxes.append(bbox)
-
+        loss_object = YoloLoss()
+        loss_value = loss_object(y_pred=bboxes, y_true=None, yolo_outputs=yolo_outputs)
 
     def testing_procedure(self):
         pass
