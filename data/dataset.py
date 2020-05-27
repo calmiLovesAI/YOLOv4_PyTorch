@@ -8,7 +8,7 @@ from configuration import Config
 
 
 class YoloDataset(Dataset):
-    def __init__(self, drop_remainder=True, shuffle=True, transform=None):
+    def __init__(self, shuffle=True, transform=None):
         self.annotation_dir = Config.txt_file_dir
         self.batch_size = Config.batch_size
         self.max_boxes_per_image = Config.max_boxes_per_image
@@ -17,12 +17,6 @@ class YoloDataset(Dataset):
         with open(file=self.annotation_dir, mode="r") as f:
             self.annotation_list = f.readlines()
 
-        quotient = len(self.annotation_list) / self.batch_size
-        remainder = len(self.annotation_list) % self.batch_size
-        self.steps_per_epoch = math.floor(quotient)
-        if remainder and not drop_remainder:
-            self.steps_per_epoch = math.ceil(quotient)
-
         if shuffle:
             random.shuffle(self.annotation_list)
 
@@ -30,32 +24,14 @@ class YoloDataset(Dataset):
         return len(self.annotation_list)
 
     def __getitem__(self, item):
-        annotations = []
-        if item < self.steps_per_epoch:
-            annotations = self.annotation_list[item * self.batch_size: (item + 1) * self.batch_size]
-        elif item == self.steps_per_epoch:
-            annotations = self.annotation_list[item * self.batch_size:]
-        image_list = []
-        labels_list = []
-        image_height_list = []
-        image_width_list = []
-        for i in range(len(annotations)):
-            image_array, labels_array, image_height, image_width = self.__get_image_information(line_string=annotations[i])
-            image_list.append(image_array)
-            labels_list.append(labels_array)
-            image_height_list.append(image_height)
-            image_width_list.append(image_width)
-        images = np.stack(image_list, axis=0)
-        labels = np.stack(labels_list, axis=0)
-        image_heights = np.stack(image_height_list, axis=0)
-        image_widths = np.stack(image_width_list, axis=0)
+        annotation = self.annotation_list[item]
+        image_array, labels_array, image_height, image_width = self.__get_image_information(line_string=annotation)
         sample = {
-            "images": images,
-            "labels": labels,
-            "image_heights": image_heights,
-            "image_widths": image_widths
+            "image": image_array,
+            "label": labels_array,
+            "height": image_height,
+            "width": image_width
         }
-
         if self.transform:
             sample = self.transform(sample)
 
@@ -95,3 +71,34 @@ class YoloDataset(Dataset):
         return image_array, labels_array, image_height, image_width
 
 
+class BatchDataset:
+    def __init__(self, dataset, batch_size, drop_remainder=False):
+        self.dataset = dataset
+        self.dataset_size = len(dataset)
+        self.batch_size = batch_size
+        self.drop_remainder = drop_remainder
+
+        quotient = self.dataset_size / self.batch_size
+        remainder = self.dataset_size % self.batch_size
+        self.steps_per_epoch = math.floor(quotient)
+        if remainder and not self.drop_remainder:
+            self.steps_per_epoch = math.ceil(quotient)
+
+    def __len__(self):
+        return self.steps_per_epoch
+
+    def batch(self, index):
+        images_list = []
+        labels_list = []
+        if index < self.steps_per_epoch - 1:
+            for i in range(self.batch_size):
+                images_list.append(self.dataset[index * self.batch_size + i]["image"])
+                labels_list.append(self.dataset[index * self.batch_size + i]["label"])
+        elif index == self.steps_per_epoch - 1:
+            batch_length = self.dataset_size - self.batch_size * index
+            for j in range(batch_length):
+                images_list.append(self.dataset[index * self.batch_size + j]["image"])
+                labels_list.append(self.dataset[index * self.batch_size + j]["label"])
+        batch_images = np.stack(images_list, axis=0)
+        batch_labels = np.stack(labels_list, axis=0)
+        return batch_images, batch_labels
