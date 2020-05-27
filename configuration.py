@@ -23,6 +23,7 @@ class Config:
                           "boat": 9, "bus": 10, "car": 11, "motorbike": 12,
                           "train": 13, "bottle": 14, "chair": 15, "diningtable": 16,
                           "pottedplant": 17, "sofa": 18, "tvmonitor": 19}
+    txt_file_dir = "data.txt"
 
 
     @classmethod
