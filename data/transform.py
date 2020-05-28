@@ -32,6 +32,6 @@ class ToTensor:
         image_tensor = image_tensor.permute(2, 0, 1)
         label_tensor = torch.from_numpy(label)
         return {
-            "image": image_tensor,
-            "label": label_tensor
+            "image": image_tensor.type(torch.float32),
+            "label": label_tensor.type(torch.float32)
         }
