@@ -6,7 +6,7 @@ import random
 
 from torch.utils.data import Dataset
 from configuration import Config
-from utils.iou import IOU
+from utils.iou import IoU
 
 
 class YoloDataset(Dataset):
@@ -138,8 +138,7 @@ class GroundTruth:
                 anchors_xywh[:, 0:2] = torch.floor(bbox_xywh_scaled[i, 0:2]).type(dtype=torch.int32) + 0.5
                 anchors_xywh[:, 2:4] = self.anchors[i]
 
-                iou_value = IOU(box_1=bbox_xywh_scaled[i].numpy(), box_2=anchors_xywh.numpy()).calculate_iou()
-                iou_value = torch.from_numpy(iou_value)  # (3)
+                iou_value = IoU(box_1=torch.unsqueeze(bbox_xywh_scaled[i], dim=0), box_2=anchors_xywh).calculate_iou()
                 iou.append(iou_value)
                 iou_mask = iou_value > 0.3
 
