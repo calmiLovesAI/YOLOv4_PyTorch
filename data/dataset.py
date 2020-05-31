@@ -69,7 +69,8 @@ class YoloDataset(Dataset):
 
 
 class GroundTruth:
-    def __init__(self):
+    def __init__(self, device):
+        self.device = device
         self.output_feature_sizes = [[Config.input_size[0] // i, Config.input_size[1] // i] for i in Config.yolo_strides]
         self.num_classes = Config.num_classes
         self.anchor_num_per_level = Config.anchor_num_per_level
@@ -83,16 +84,16 @@ class GroundTruth:
         batch_size = labels.size()[0]
         batch_label_small = torch.zeros(batch_size, self.output_feature_sizes[0][0],
                                         self.output_feature_sizes[0][1], self.anchor_num_per_level,
-                                        5 + self.num_classes, dtype=torch.float32)
+                                        5 + self.num_classes, dtype=torch.float32, device=self.device)
         batch_label_middle = torch.zeros(batch_size, self.output_feature_sizes[1][0],
                                          self.output_feature_sizes[1][1], self.anchor_num_per_level,
-                                         5 + self.num_classes, dtype=torch.float32)
+                                         5 + self.num_classes, dtype=torch.float32, device=self.device)
         batch_label_large = torch.zeros(batch_size, self.output_feature_sizes[2][0],
                                         self.output_feature_sizes[2][1], self.anchor_num_per_level,
-                                        5 + self.num_classes, dtype=torch.float32)
-        batch_small_box = torch.zeros(batch_size, self.max_bbox_per_level, 4, dtype=torch.float32)
-        batch_middle_box = torch.zeros(batch_size, self.max_bbox_per_level, 4, dtype=torch.float32)
-        batch_large_box = torch.zeros(batch_size, self.max_bbox_per_level, 4, dtype=torch.float32)
+                                        5 + self.num_classes, dtype=torch.float32, device=self.device)
+        batch_small_box = torch.zeros(batch_size, self.max_bbox_per_level, 4, dtype=torch.float32, device=self.device)
+        batch_middle_box = torch.zeros(batch_size, self.max_bbox_per_level, 4, dtype=torch.float32, device=self.device)
+        batch_large_box = torch.zeros(batch_size, self.max_bbox_per_level, 4, dtype=torch.float32, device=self.device)
         for i in range(batch_size):
             label = labels[i]
             label = label[label[..., -1] != -1]
@@ -114,15 +115,15 @@ class GroundTruth:
 
     def __get_true_boxes(self, bboxes):
         label = [torch.zeros(self.output_feature_sizes[i][0], self.output_feature_sizes[i][1], self.anchor_num_per_level, 5 + self.num_classes,
-                             dtype=torch.float32) for i in range(3)]
-        bboxes_xywh = [torch.zeros(self.max_bbox_per_level, 4, dtype=torch.float32) for _ in range(3)]
-        bboxes_num = torch.zeros(3, dtype=torch.float32)
+                             dtype=torch.float32, device=self.device) for i in range(3)]
+        bboxes_xywh = [torch.zeros(self.max_bbox_per_level, 4, dtype=torch.float32, device=self.device) for _ in range(3)]
+        bboxes_num = torch.zeros(3, dtype=torch.float32, device=self.device)
         for i in range(bboxes.size()[0]):
             bbox_coord = bboxes[i, :4]
             bbox_class_idx = bboxes[i, 4].type(dtype=torch.int32)
-            one_hot = torch.zeros(self.num_classes, dtype=torch.float32)
+            one_hot = torch.zeros(self.num_classes, dtype=torch.float32, device=self.device)
             one_hot[bbox_class_idx] = 1.0
-            uniform_distribution = torch.full(size=(self.num_classes, ), fill_value=1.0 / self.num_classes, dtype=torch.float32)
+            uniform_distribution = torch.full(size=(self.num_classes, ), fill_value=1.0 / self.num_classes, dtype=torch.float32, device=self.device)
             smooth_one_hot = one_hot * (1 - self.delta) + self.delta * uniform_distribution
 
             bbox_xywh = torch.cat(tensors=((bbox_coord[2:] + bbox_coord[:2]) * 0.5, bbox_coord[2:] - bbox_coord[:2]), dim=-1)
@@ -131,7 +132,7 @@ class GroundTruth:
             iou = []
             positive_exist = False
             for i in range(3):
-                anchors_xywh = torch.zeros(self.anchor_num_per_level, 4, dtype=torch.float32)
+                anchors_xywh = torch.zeros(self.anchor_num_per_level, 4, dtype=torch.float32, device=self.device)
                 anchors_xywh[:, 0:2] = torch.floor(bbox_xywh_scaled[i, 0:2]).type(dtype=torch.int32) + 0.5
                 anchors_xywh[:, 2:4] = self.anchors[i]
 

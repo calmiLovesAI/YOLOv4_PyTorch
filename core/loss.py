@@ -6,9 +6,10 @@ from configuration import Config
 
 
 class YoloLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super(YoloLoss, self).__init__()
-        self.input_size = torch.tensor(data=Config.input_size, dtype=torch.float32)
+        self.device = device
+        self.input_size = torch.tensor(data=Config.input_size, dtype=torch.float32, device=device)
         self.iou_loss_threshold = Config.iou_loss_threshold
 
     def forward(self, y_pred, y_true, yolo_outputs):

@@ -6,8 +6,8 @@ from core.loss import YoloLoss
 
 class PostProcessing:
     @staticmethod
-    def training_procedure(yolo_outputs):
-        generate_prediction = GeneratePrediction()
+    def training_procedure(yolo_outputs, device):
+        generate_prediction = GeneratePrediction(device)
         bboxes = []
         for i, feature in enumerate(yolo_outputs):
             bbox = generate_prediction(feature=feature, feature_index=i)
@@ -19,11 +19,12 @@ class PostProcessing:
 
 
 class GeneratePrediction:
-    def __init__(self):
-        self.num_classes = Config.num_classes
-        self.strides = Config.yolo_strides
-        self.anchors = Config.get_anchors()
-        self.scale = Config.scale
+    def __init__(self, device):
+        self.device = device
+        self.num_classes = torch.tensor(Config.num_classes, device=device)
+        self.strides = torch.tensor(Config.yolo_strides, device=device)
+        self.anchors = Config.get_anchors().to(device)
+        self.scale = torch.tensor(Config.scale, device=device)
 
     @staticmethod
     def __meshgrid(size, B):
@@ -50,7 +51,7 @@ class GeneratePrediction:
         feature = torch.reshape(feature, (shape[0], shape[1], shape[2], 3, -1))
         dx_dy, dw_dh, conf, prob = torch.split(feature, [2, 2, 1, self.num_classes], -1)
 
-        xy_grid = GeneratePrediction.__meshgrid(size=shape[1:3], B=shape[0])
+        xy_grid = GeneratePrediction.__meshgrid(size=shape[1:3], B=shape[0]).to(self.device)
 
         pred_xy = self.strides[feature_index] * (torch.sigmoid(dx_dy) * self.scale[feature_index] - 0.5 * (self.scale[feature_index] - 1) + xy_grid)
         pred_wh = torch.exp(dw_dh) * self.anchors[feature_index]

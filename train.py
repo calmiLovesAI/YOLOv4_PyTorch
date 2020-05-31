@@ -31,7 +31,7 @@ if __name__ == '__main__':
     yolo_v4.train()
 
     # loss
-    gt = GroundTruth()
+    gt = GroundTruth(device=device)
     loss_object = YoloLoss()
 
     # optimizer
@@ -51,15 +51,15 @@ if __name__ == '__main__':
 
             optimizer.zero_grad()
             outputs = yolo_v4(batch_images)
-            preds = PostProcessing.training_procedure(outputs)
+            preds = PostProcessing.training_procedure(outputs, device)
             target = gt(labels=batch_labels)
             giou_loss, conf_loss, prob_loss = loss_object(y_pred=preds, y_true=target, yolo_outputs=outputs)
             total_loss = giou_loss + conf_loss + prob_loss
 
-            total_loss_mean.update(total_loss)
-            giou_mean.update(giou_loss)
-            conf_mean.update(conf_loss)
-            prob_mean.update(prob_loss)
+            total_loss_mean.update(total_loss.item())
+            giou_mean.update(giou_loss.item())
+            conf_mean.update(conf_loss.item())
+            prob_mean.update(prob_loss.item())
 
             total_loss.backward()
             optimizer.step()
