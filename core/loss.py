@@ -9,12 +9,23 @@ class YoloLoss(nn.Module):
     def __init__(self):
         super(YoloLoss, self).__init__()
         self.input_size = torch.tensor(data=Config.input_size, dtype=torch.float32)
+        self.iou_loss_threshold = Config.iou_loss_threshold
 
     def forward(self, y_pred, y_true, yolo_outputs):
+        giou_loss = 0
+        conf_loss = 0
+        prob_loss = 0
         num_levels = len(yolo_outputs)
         for i in range(num_levels):
-            self.__single_level_loss(pred=y_pred[i], feature=yolo_outputs[i], label=y_true[i][0], boxes=y_true[i][1])
-        pass
+            giou, conf, prob = self.__single_level_loss(pred=y_pred[i], feature=yolo_outputs[i], label=y_true[i][0], boxes=y_true[i][1])
+            giou_loss += giou
+            conf_loss += conf
+            prob_loss += prob
+        return giou_loss, conf_loss, prob_loss
+
+    @staticmethod
+    def __sigmoid_cross_entropy_with_logits(labels, logits):
+        return torch.max(logits, torch.tensor(0.0)) - logits * labels + torch.log(1 + torch.exp(-torch.abs(logits)))
 
     def __single_level_loss(self, pred, feature, label, boxes):
         N, C, H, W = feature.size()
@@ -33,12 +44,28 @@ class YoloLoss(nn.Module):
         bbox_loss_scale = 2.0 - 1.0 * label_xywh[..., 2:3] * label_xywh[..., 3:4] / (self.input_size ** 2)
         giou_loss = respond_bbox * bbox_loss_scale * (1 - giou)
 
-        # print(boxes.size())  # torch.Size([2, 50, 4])
         pred_xywh = torch.unsqueeze(pred_xywh, dim=4)
         for _ in range(3):
             boxes = torch.unsqueeze(boxes, dim=1)
         iou = IoU(box_1=pred_xywh, box_2=boxes).calculate_iou()
-        # print(iou.size())  # torch.Size([2, 52, 52, 3, 50])
         max_iou, indices = torch.max(iou, dim=-1, keepdim=True)
-        # print(max_iou.size())    # torch.Size([2, 52, 52, 3, 1])
-        
+        iou_mask = (max_iou < self.iou_loss_threshold).type(torch.float32)
+        respond_bgd = (1.0 - respond_bbox) * iou_mask
+
+        conf_focal = torch.pow(respond_bbox - pred_conf, 2)
+        conf_loss = conf_focal * (respond_bbox * YoloLoss.__sigmoid_cross_entropy_with_logits(labels=respond_bbox,
+                                                                                              logits=raw_conf)
+                                  +
+                                  respond_bgd *  YoloLoss.__sigmoid_cross_entropy_with_logits(labels=respond_bbox,
+                                                                                              logits=raw_conf))
+        prob_loss = respond_bbox + YoloLoss.__sigmoid_cross_entropy_with_logits(labels=label_prob,
+                                                                                logits=raw_prob)
+
+        giou_loss = torch.sum(giou_loss, dim=(1, 2, 3, 4))
+        giou_loss = torch.mean(giou_loss)
+        conf_loss = torch.sum(conf_loss, dim=(1, 2, 3, 4))
+        conf_loss = torch.mean(conf_loss)
+        prob_loss = torch.sum(prob_loss, dim=(1, 2, 3, 4))
+        prob_loss = torch.mean(prob_loss)
+
+        return giou_loss, conf_loss, prob_loss

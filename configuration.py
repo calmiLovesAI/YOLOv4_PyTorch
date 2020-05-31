@@ -3,7 +3,7 @@ import torch
 
 class Config:
     epochs = 50
-    batch_size = 2
+    batch_size = 8
 
     input_size = (416, 416)
 
@@ -27,6 +27,9 @@ class Config:
 
     txt_file_dir = "data.txt"
     max_boxes_per_image = 50
+
+
+    iou_loss_threshold = 0.5
 
 
     @classmethod
