@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     # loss
     gt = GroundTruth(device=device)
-    loss_object = YoloLoss()
+    loss_object = YoloLoss(device=device)
 
     # optimizer
     optimizer = optim.AdamW(params=yolo_v4.parameters(), lr=1e-5)

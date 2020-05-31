@@ -3,7 +3,7 @@ import torch
 
 class Config:
     epochs = 50
-    batch_size = 8
+    batch_size = 6
 
     input_size = (416, 416)
 

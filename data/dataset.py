@@ -75,7 +75,7 @@ class GroundTruth:
         self.num_classes = Config.num_classes
         self.anchor_num_per_level = Config.anchor_num_per_level
         self.max_bbox_per_level = Config.max_boxes_per_image
-        self.strides = torch.tensor(Config.yolo_strides, dtype=torch.float32)
+        self.strides = torch.tensor(Config.yolo_strides, dtype=torch.float32, device=device)
         self.anchors = Config.get_anchors()
 
         self.delta = 0.01
@@ -136,7 +136,7 @@ class GroundTruth:
                 anchors_xywh[:, 0:2] = torch.floor(bbox_xywh_scaled[i, 0:2]).type(dtype=torch.int32) + 0.5
                 anchors_xywh[:, 2:4] = self.anchors[i]
 
-                iou_value = IoU(box_1=torch.unsqueeze(bbox_xywh_scaled[i], dim=0), box_2=anchors_xywh).calculate_iou()
+                iou_value = IoU(box_1=torch.unsqueeze(bbox_xywh_scaled[i], dim=0), box_2=anchors_xywh, device=self.device).calculate_iou()
                 iou.append(iou_value)
                 iou_mask = iou_value > 0.3
 
