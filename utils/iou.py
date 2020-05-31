@@ -1,7 +1,7 @@
 import torch
 
 
-class IoU(object):
+class IoU:
     def __init__(self, box_1, box_2, device):
         """
         The last dimension of box_1 and box_2 are 4(center_x, center_y, w, h)
@@ -49,7 +49,7 @@ class GIoU:
 
     @staticmethod
     def __to_xyxy(box):
-        return torch.cat(tensors=(box[..., 0:2] - 0.5 * box[..., 2:], box[..., 0:2] + 0.5 * box[..., 2:]), dim=-1)
+        return torch.cat(tensors=(box[..., 0:2] - 0.5 * box[..., 2:4], box[..., 0:2] + 0.5 * box[..., 2:4]), dim=-1)
 
     @staticmethod
     def __get_area(box):

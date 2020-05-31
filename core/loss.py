@@ -41,7 +41,7 @@ class YoloLoss(nn.Module):
 
         giou = torch.unsqueeze(GIoU(box_1=pred_xywh, box_2=label_xywh, device=self.device).calculate_giou(), dim=-1)
 
-        bbox_loss_scale = 2.0 - 1.0 * label_xywh[..., 2:3] * label_xywh[..., 3:4] / (self.input_size ** 2)
+        bbox_loss_scale = 2.0 - 1.0 * label_xywh[..., 2:3] * label_xywh[..., 3:4] / (self.input_size[0] * self.input_size[1])
         giou_loss = respond_bbox * bbox_loss_scale * (1 - giou)
 
         pred_xywh = torch.unsqueeze(pred_xywh, dim=4)
