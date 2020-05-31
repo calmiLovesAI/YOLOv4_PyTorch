@@ -96,7 +96,6 @@ class GroundTruth:
         for i in range(batch_size):
             label = labels[i]
             label = label[label[..., -1] != -1]
-            # print("label: ", label.size())
             label, bboxes = self.__get_true_boxes(bboxes=label)
             label_small, label_middle, label_large = label
             boxes_small, boxes_middle, boxes_large = bboxes
@@ -118,7 +117,6 @@ class GroundTruth:
                              dtype=torch.float32) for i in range(3)]
         bboxes_xywh = [torch.zeros(self.max_bbox_per_level, 4, dtype=torch.float32) for _ in range(3)]
         bboxes_num = torch.zeros(3, dtype=torch.float32)
-        # print("bboxes_num: ", bboxes_num, bboxes_num.size())
         for i in range(bboxes.size()[0]):
             bbox_coord = bboxes[i, :4]
             bbox_class_idx = bboxes[i, 4].type(dtype=torch.int32)
@@ -128,8 +126,7 @@ class GroundTruth:
             smooth_one_hot = one_hot * (1 - self.delta) + self.delta * uniform_distribution
 
             bbox_xywh = torch.cat(tensors=((bbox_coord[2:] + bbox_coord[:2]) * 0.5, bbox_coord[2:] - bbox_coord[:2]), dim=-1)
-            # print("bbox_xywh shape: ", bbox_xywh.size())  # (4,)
-            bbox_xywh_scaled = torch.unsqueeze(bbox_xywh, dim=0) / torch.unsqueeze(self.strides, dim=-1) # (3, 4)
+            bbox_xywh_scaled = torch.unsqueeze(bbox_xywh, dim=0) / torch.unsqueeze(self.strides, dim=-1)
 
             iou = []
             positive_exist = False

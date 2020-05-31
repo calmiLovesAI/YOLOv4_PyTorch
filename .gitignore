@@ -1,6 +1,7 @@
 .idea
 __pycache__
-train.py
 /data/datasets/*
 !/data/datasets/README.md
+/saved_model/*
+!/saved_model/README.md
 data.txt

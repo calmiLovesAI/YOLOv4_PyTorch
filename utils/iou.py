@@ -42,8 +42,8 @@ class IoU(object):
 
 class GIoU:
     def __init__(self, box_1, box_2):
-        self.box_1 = GIoU.__to_xyxy(box_1)
-        self.box_2 = GIoU.__to_xyxy(box_2)
+        self.box_1 = GIoU.__fn(GIoU.__to_xyxy(box_1))
+        self.box_2 = GIoU.__fn(GIoU.__to_xyxy(box_2))
 
     @staticmethod
     def __to_xyxy(box):
@@ -52,6 +52,11 @@ class GIoU:
     @staticmethod
     def __get_area(box):
         return (box[..., 2] - box[..., 0]) * (box[..., 3] - box[..., 1])
+
+    @staticmethod
+    def __fn(box):
+        return torch.cat(tensors=(torch.min(box[..., 0:2], box[..., 2:4]),
+                                  torch.max(box[..., 0:2], box[..., 2:4])), dim=-1)
 
     def calculate_giou(self):
         box_1_area = GIoU.__get_area(self.box_1)

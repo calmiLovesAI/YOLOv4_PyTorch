@@ -7,6 +7,9 @@ class Config:
 
     input_size = (416, 416)
 
+    # save model
+    save_model_dir = "./saved_model/"
+
     # network structure
     yolo_strides = [8, 16, 32]
     yolo_anchors = [12, 16, 19, 36, 40, 28, 36, 75, 76, 55, 72, 146, 142, 110, 192, 243, 459, 401]
