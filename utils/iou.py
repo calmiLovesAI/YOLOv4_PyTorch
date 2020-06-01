@@ -1,4 +1,5 @@
 import torch
+import math
 
 
 class IoU:
@@ -78,3 +79,50 @@ class GIoU:
 
         giou = iou - 1.0 * (enclose_area - union_area) / enclose_area
         return giou
+
+
+class CIoU:
+    def __init__(self, box_1, box_2, device):
+        super(CIoU, self).__init__()
+        self.box_1_xywh = box_1
+        self.box_2_xywh = box_2
+        self.box_1 = CIoU.__fn(CIoU.__to_xyxy(box_1))
+        self.box_2 = CIoU.__fn(CIoU.__to_xyxy(box_2))
+        self.device = device
+
+    @staticmethod
+    def __to_xyxy(box):
+        return torch.cat(tensors=(box[..., 0:2] - 0.5 * box[..., 2:4], box[..., 0:2] + 0.5 * box[..., 2:4]), dim=-1)
+
+    @staticmethod
+    def __get_area(box):
+        return (box[..., 2] - box[..., 0]) * (box[..., 3] - box[..., 1])
+
+    @staticmethod
+    def __fn(box):
+        return torch.cat(tensors=(torch.min(box[..., 0:2], box[..., 2:4]),
+                                  torch.max(box[..., 0:2], box[..., 2:4])), dim=-1)
+
+    def calculate_ciou(self):
+        box_1_area = CIoU.__get_area(self.box_1)
+        box_2_area = CIoU.__get_area(self.box_2)
+
+        intersect_min = torch.max(self.box_1[..., 0:2], self.box_2[..., 0:2])
+        intersect_max = torch.min(self.box_1[..., 2:4], self.box_2[..., 2:4])
+        intersect_wh = torch.max(intersect_max - intersect_min, torch.tensor(0.0, device=self.device))
+        intersect_area = intersect_wh[..., 0] * intersect_wh[..., 1]
+        union_area = box_1_area + box_2_area - intersect_area
+        iou = intersect_area / (union_area + 1e-10)
+
+        enclose_left_up = torch.min(self.box_1[..., 0:2], self.box_2[..., 0:2])
+        enclose_right_down = torch.max(self.box_1[..., 2:4], self.box_2[..., 2:4])
+        enclose_wh = torch.max(enclose_right_down - enclose_left_up, torch.tensor(0.0, device=self.device))
+        enclose_c_square = torch.pow(enclose_wh[..., 0], 2) + torch.pow(enclose_wh[..., 1], 2)
+        d_square = torch.pow(self.box_1_xywh[..., 0] - self.box_2_xywh[..., 0], 2) + torch.pow(self.box_1_xywh[..., 1] - self.box_2_xywh[..., 1], 2)
+
+        v = (4.0 / torch.pow(torch.tensor(math.pi, dtype=torch.float32, device=self.device), 2)) * torch.pow(torch.atan(self.box_2_xywh[..., 2] / (self.box_2_xywh[..., 3] + 1e-10)) - torch.atan(self.box_1_xywh[..., 2] / (self.box_1_xywh[..., 3] + 1e-10)), 2)
+        alpha = v / (1 - iou + v)
+
+        ciou = iou - d_square / enclose_c_square - alpha * v
+
+        return ciou

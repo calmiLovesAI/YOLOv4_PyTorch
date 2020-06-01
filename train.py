@@ -37,7 +37,7 @@ if __name__ == '__main__':
     # optimizer
     optimizer = optim.AdamW(params=yolo_v4.parameters(), lr=1e-5)
 
-    giou_mean = MeanMetric()
+    ciou_mean = MeanMetric()
     conf_mean = MeanMetric()
     prob_mean = MeanMetric()
     total_loss_mean = MeanMetric()
@@ -53,11 +53,11 @@ if __name__ == '__main__':
             outputs = yolo_v4(batch_images)
             preds = PostProcessing.training_procedure(outputs, device)
             target = gt(labels=batch_labels)
-            giou_loss, conf_loss, prob_loss = loss_object(y_pred=preds, y_true=target, yolo_outputs=outputs)
-            total_loss = giou_loss + conf_loss + prob_loss
+            ciou_loss, conf_loss, prob_loss = loss_object(y_pred=preds, y_true=target, yolo_outputs=outputs)
+            total_loss = ciou_loss + conf_loss + prob_loss
 
             total_loss_mean.update(total_loss.item())
-            giou_mean.update(giou_loss.item())
+            ciou_mean.update(ciou_loss.item())
             conf_mean.update(conf_loss.item())
             prob_mean.update(prob_loss.item())
 
@@ -67,18 +67,18 @@ if __name__ == '__main__':
             step_end_time = time.time()
 
             print("Epoch: {}/{}, step: {}/{}, total_loss: {}, "
-                  "giou_loss: {}, conf_loss: {}, prob_loss: {}, time_cost: {:.3f}s".format(epoch,
+                  "ciou_loss: {}, conf_loss: {}, prob_loss: {}, time_cost: {:.3f}s".format(epoch,
                                                                                            Config.epochs,
                                                                                            step,
                                                                                            steps_per_epoch,
                                                                                            total_loss_mean.result(),
-                                                                                           giou_mean.result(),
+                                                                                           ciou_mean.result(),
                                                                                            conf_mean.result(),
                                                                                            prob_mean.result(),
                                                                                            step_end_time - step_start_time))
 
         total_loss_mean.reset()
-        giou_mean.reset()
+        ciou_mean.reset()
         conf_mean.reset()
         prob_mean.reset()
 
