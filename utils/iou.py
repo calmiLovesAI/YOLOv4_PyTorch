@@ -38,7 +38,7 @@ class IoU:
         intersect_wh = torch.max(intersect_max - intersect_min, torch.tensor(0.0, device=self.device))
         intersect_area = intersect_wh[..., 0] * intersect_wh[..., 1]
         union_area = box_1_area + box_2_area - intersect_area
-        iou = intersect_area / torch.clamp(union_area, min=1e-10)
+        iou = intersect_area / torch.clamp(union_area, min=1e-6)
         return iou
 
 
@@ -82,13 +82,12 @@ class GIoU:
 
 
 class CIoU:
-    def __init__(self, box_1, box_2, device):
+    def __init__(self, box_1, box_2):
         super(CIoU, self).__init__()
         self.box_1_xywh = box_1
         self.box_2_xywh = box_2
-        self.box_1 = CIoU.__fn(CIoU.__to_xyxy(box_1))
-        self.box_2 = CIoU.__fn(CIoU.__to_xyxy(box_2))
-        self.device = device
+        self.box_1 = CIoU.__to_xyxy(box_1)
+        self.box_2 = CIoU.__to_xyxy(box_2)
 
     @staticmethod
     def __to_xyxy(box):
@@ -112,17 +111,17 @@ class CIoU:
         intersect_wh = torch.max(intersect_max - intersect_min, torch.zeros_like(intersect_max))
         intersect_area = intersect_wh[..., 0] * intersect_wh[..., 1]
         union_area = box_1_area + box_2_area - intersect_area
-        iou = intersect_area / torch.clamp(union_area, min=1e-10)
+        iou = intersect_area / torch.clamp(union_area, min=1e-6)
 
         enclose_left_up = torch.min(self.box_1[..., 0:2], self.box_2[..., 0:2])
         enclose_right_down = torch.max(self.box_1[..., 2:4], self.box_2[..., 2:4])
         enclose_wh = torch.max(enclose_right_down - enclose_left_up, torch.zeros_like(enclose_right_down))
-        enclose_c_square = torch.pow(enclose_wh[..., 0], 2) + torch.pow(enclose_wh[..., 1], 2)
-        d_square = torch.pow(self.box_1_xywh[..., 0] - self.box_2_xywh[..., 0], 2) + torch.pow(self.box_1_xywh[..., 1] - self.box_2_xywh[..., 1], 2)
+        enclose_c_square = torch.sum(torch.pow(enclose_wh[..., 0:2], 2), dim=-1)
+        d_square = torch.sum(torch.pow(self.box_1_xywh[..., 0:2] - self.box_2_xywh[..., 0:2], 2), dim=-1)
 
-        v = (4.0 / math.pi ** 2) * torch.pow(torch.atan(self.box_2_xywh[..., 2] / torch.clamp(self.box_2_xywh[..., 3], min=1e-10)) - torch.atan(self.box_1_xywh[..., 2] / torch.clamp(self.box_1_xywh[..., 3], min=1e-10)), 2)
-        alpha = v / torch.clamp(1.0 - iou + v, 1e-10)
+        v = (4.0 / math.pi ** 2) * torch.pow(torch.atan(self.box_2_xywh[..., 2] / torch.clamp(self.box_2_xywh[..., 3], min=1e-6)) - torch.atan(self.box_1_xywh[..., 2] / torch.clamp(self.box_1_xywh[..., 3], min=1e-6)), 2)
+        alpha = v / torch.clamp(1.0 - iou + v, 1e-6)
 
-        ciou = iou - d_square / torch.clamp(enclose_c_square, min=1e-10) - alpha * v
+        ciou = iou - 1.0 * d_square / torch.clamp(enclose_c_square, min=1e-6) - alpha * v
 
         return ciou
