@@ -26,10 +26,9 @@ class GeneratePrediction:
         self.anchors = Config.get_anchors().to(device)
         self.scale = torch.tensor(Config.scale, device=device)
 
-    @staticmethod
-    def __meshgrid(size, B):
-        x = torch.arange(start=0, end=size[1], dtype=torch.float32)
-        y = torch.arange(start=0, end=size[0], dtype=torch.float32)
+    def __meshgrid(self, size, B):
+        x = torch.arange(start=0, end=size[1], dtype=torch.float32, device=self.device)
+        y = torch.arange(start=0, end=size[0], dtype=torch.float32, device=self.device)
         x, y = torch.meshgrid([x, y])
         xy_grid = torch.stack(tensors=(x, y), dim=-1)
         xy_grid = torch.unsqueeze(xy_grid, dim=2)
@@ -51,7 +50,7 @@ class GeneratePrediction:
         feature = torch.reshape(feature, (shape[0], shape[1], shape[2], 3, -1))
         dx_dy, dw_dh, conf, prob = torch.split(feature, [2, 2, 1, self.num_classes], -1)
 
-        xy_grid = GeneratePrediction.__meshgrid(size=shape[1:3], B=shape[0]).to(self.device)
+        xy_grid = self.__meshgrid(size=shape[1:3], B=shape[0])
 
         pred_xy = self.strides[feature_index] * (torch.sigmoid(dx_dy) * self.scale[feature_index] - 0.5 * (self.scale[feature_index] - 1) + xy_grid)
         pred_wh = torch.exp(dw_dh) * self.anchors[feature_index]
