@@ -10,7 +10,7 @@ class Rescale:
         h, w = image.shape[:2]
         dst_h, dst_w = self.output_size
         ratio = min(dst_h / h, dst_w / w)
-        new_h, new_w = h * ratio, w * ratio
+        new_h, new_w = int(h * ratio), int(w * ratio)
         image = cv2.resize(src=image, dsize=(new_w, new_h), interpolation=cv2.INTER_NEAREST)
         top = (dst_h - new_h) // 2
         bottom = dst_h - new_h - top
