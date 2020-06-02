@@ -8,6 +8,7 @@ from configuration import Config
 from data.dataset import YoloDataset, GroundTruth
 from torchvision import transforms
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 from data.transform import Rescale, ToTensor
 from core.loss import YoloLoss
 from utils.metrics import MeanMetric
@@ -42,6 +43,9 @@ if __name__ == '__main__':
     prob_mean = MeanMetric()
     total_loss_mean = MeanMetric()
 
+    # tensorboard
+    writer = SummaryWriter()
+
     for epoch in range(Config.epochs):
         for step, batch_data in enumerate(dataloader):
             step_start_time = time.time()
@@ -61,6 +65,7 @@ if __name__ == '__main__':
             conf_mean.update(conf_loss.item())
             prob_mean.update(prob_loss.item())
 
+
             total_loss.backward()
             optimizer.step()
 
@@ -76,11 +81,18 @@ if __name__ == '__main__':
                                                                                            conf_mean.result(),
                                                                                            prob_mean.result(),
                                                                                            step_end_time - step_start_time))
+        writer.add_scalar("total_loss", total_loss_mean.result(), epoch)
+        writer.add_scalar("ciou_loss", ciou_mean.result(), epoch)
+        writer.add_scalar("conf_loss", conf_mean.result(), epoch)
+        writer.add_scalar("prob_loss", prob_mean.result(), epoch)
 
         total_loss_mean.reset()
         ciou_mean.reset()
         conf_mean.reset()
         prob_mean.reset()
+
+    writer.flush()
+    writer.close()
 
     torch.save(yolo_v4.state_dict(), Config.save_model_dir + "saved_model.pth")
 

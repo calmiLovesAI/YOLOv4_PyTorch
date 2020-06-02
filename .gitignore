@@ -5,3 +5,4 @@ __pycache__
 /saved_model/*
 !/saved_model/README.md
 data.txt
+/runs

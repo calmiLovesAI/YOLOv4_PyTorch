@@ -8,7 +8,7 @@ class MeanMetric:
     def update(self, value):
         self.accumulated += value
         self.count += 1
-        self.accumulated = self.accumulated / self.count
+        self.accumulated /= self.count
 
     def result(self):
         return self.accumulated
