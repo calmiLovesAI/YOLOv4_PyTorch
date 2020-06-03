@@ -10,6 +10,12 @@ class Config:
     # save model
     save_model_dir = "./saved_model/"
 
+    # test image
+    test_single_image_dir = "./test_pictures/2007_000256.jpg"
+    test_images_during_training = False
+    training_results_save_dir = "./test_pictures/"
+    test_images_dir_list = ["", ""]
+
     # network structure
     yolo_strides = [8, 16, 32]
     yolo_anchors = [12, 16, 19, 36, 40, 28, 36, 75, 76, 55, 72, 146, 142, 110, 192, 243, 459, 401]
@@ -35,7 +41,14 @@ class Config:
 
     avoid_loss_nan_value = 1e-10
 
+    score_threshold = 0.5
+    nms_iou_threshold = 0.3
+
 
     @classmethod
     def get_anchors(cls):
         return torch.tensor(cls.yolo_anchors, dtype=torch.float32).reshape(3, 3, 2)
+
+    @classmethod
+    def idx2class(cls):
+        return dict((v, k) for k, v in Config.pascal_voc_classes.items())

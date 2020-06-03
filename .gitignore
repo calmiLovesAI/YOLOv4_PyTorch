@@ -6,3 +6,5 @@ __pycache__
 !/saved_model/README.md
 data.txt
 /runs
+/test_pictures/*
+!/test_pictures/README.md
