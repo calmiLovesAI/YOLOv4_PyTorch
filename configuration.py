@@ -31,8 +31,9 @@ class Config:
     txt_file_dir = "data.txt"
     max_boxes_per_image = 50
 
-
     iou_loss_threshold = 0.5
+
+    avoid_loss_nan_value = 1e-10
 
 
     @classmethod

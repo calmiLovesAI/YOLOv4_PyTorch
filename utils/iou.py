@@ -1,6 +1,8 @@
 import torch
 import math
 
+from configuration import Config
+
 
 class IoU:
     def __init__(self, box_1, box_2, device):
@@ -38,7 +40,7 @@ class IoU:
         intersect_wh = torch.max(intersect_max - intersect_min, torch.tensor(0.0, device=self.device))
         intersect_area = intersect_wh[..., 0] * intersect_wh[..., 1]
         union_area = box_1_area + box_2_area - intersect_area
-        iou = intersect_area / torch.clamp(union_area, min=1e-6)
+        iou = intersect_area / torch.clamp(union_area, min=Config.avoid_loss_nan_value)
         return iou
 
 
@@ -111,7 +113,7 @@ class CIoU:
         intersect_wh = torch.max(intersect_max - intersect_min, torch.zeros_like(intersect_max))
         intersect_area = intersect_wh[..., 0] * intersect_wh[..., 1]
         union_area = box_1_area + box_2_area - intersect_area
-        iou = intersect_area / torch.clamp(union_area, min=1e-6)
+        iou = intersect_area / torch.clamp(union_area, min=Config.avoid_loss_nan_value)
 
         enclose_left_up = torch.min(self.box_1[..., 0:2], self.box_2[..., 0:2])
         enclose_right_down = torch.max(self.box_1[..., 2:4], self.box_2[..., 2:4])
@@ -119,9 +121,9 @@ class CIoU:
         enclose_c_square = torch.sum(torch.pow(enclose_wh[..., 0:2], 2), dim=-1)
         d_square = torch.sum(torch.pow(self.box_1_xywh[..., 0:2] - self.box_2_xywh[..., 0:2], 2), dim=-1)
 
-        v = (4.0 / math.pi ** 2) * torch.pow(torch.atan(self.box_2_xywh[..., 2] / torch.clamp(self.box_2_xywh[..., 3], min=1e-6)) - torch.atan(self.box_1_xywh[..., 2] / torch.clamp(self.box_1_xywh[..., 3], min=1e-6)), 2)
-        alpha = v / torch.clamp(1.0 - iou + v, 1e-6)
+        v = (4.0 / math.pi ** 2) * torch.pow(torch.atan(self.box_2_xywh[..., 2] / torch.clamp(self.box_2_xywh[..., 3], min=Config.avoid_loss_nan_value)) - torch.atan(self.box_1_xywh[..., 2] / torch.clamp(self.box_1_xywh[..., 3], min=Config.avoid_loss_nan_value)), 2)
+        alpha = v / torch.clamp(1.0 - iou + v, min=Config.avoid_loss_nan_value)
 
-        ciou = iou - 1.0 * d_square / torch.clamp(enclose_c_square, min=1e-6) - alpha * v
+        ciou = iou - 1.0 * d_square / torch.clamp(enclose_c_square, min=Config.avoid_loss_nan_value) - alpha * v
 
         return ciou
