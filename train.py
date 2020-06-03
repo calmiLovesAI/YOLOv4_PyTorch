@@ -36,14 +36,15 @@ if __name__ == '__main__':
     loss_object = YoloLoss(device=device)
 
     # optimizer
-    optimizer = optim.AdamW(params=yolo_v4.parameters(), lr=1e-5)
+    optimizer = optim.AdamW(params=yolo_v4.parameters(), lr=1e-4)
+    scheduler = optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=0.96)
 
     ciou_mean = MeanMetric()
     conf_mean = MeanMetric()
     prob_mean = MeanMetric()
     total_loss_mean = MeanMetric()
 
-    # tensorboard
+    # tensorboard --logdir=runs
     writer = SummaryWriter()
 
     for epoch in range(Config.epochs):
@@ -64,7 +65,6 @@ if __name__ == '__main__':
             ciou_mean.update(ciou_loss.item())
             conf_mean.update(conf_loss.item())
             prob_mean.update(prob_loss.item())
-
 
             total_loss.backward()
             optimizer.step()
@@ -90,6 +90,8 @@ if __name__ == '__main__':
         ciou_mean.reset()
         conf_mean.reset()
         prob_mean.reset()
+
+        scheduler.step()
 
     writer.flush()
     writer.close()
