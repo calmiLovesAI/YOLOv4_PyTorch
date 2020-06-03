@@ -9,12 +9,17 @@ class Config:
 
     # save model
     save_model_dir = "./saved_model/"
+    save_frequency = 10
+    load_weights_before_training = False
+    load_weights_from_epoch = 0
 
     # test image
-    test_single_image_dir = "./test_pictures/2007_000256.jpg"
+    test_single_image_dir = ""
     test_images_during_training = False
     training_results_save_dir = "./test_pictures/"
     test_images_dir_list = ["", ""]
+
+    detect_on_cpu = False
 
     # network structure
     yolo_strides = [8, 16, 32]

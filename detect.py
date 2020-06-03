@@ -18,12 +18,23 @@ def detect_one_picture(model, picture_dir):
     return image
 
 
+def detect_multiple_pictures(model, pictures, epoch):
+    index = 0
+    for picture in pictures:
+        index += 1
+        result = detect_one_picture(model=model, picture_dir=picture)
+        cv2.imwrite(filename=Config.training_results_save_dir + "epoch-{}-picture-{}.jpg".format(epoch, index), img=result)
+
+
 if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("device: ", device)
 
     yolo_v4 = YOLOv4()
-    yolo_v4.load_state_dict(torch.load(Config.save_model_dir + "saved_model.pth", map_location=torch.device('cpu')))
+    if Config.detect_on_cpu:
+        yolo_v4.load_state_dict(torch.load(Config.save_model_dir + "saved_model.pth", map_location=torch.device('cpu')))
+    else:
+        yolo_v4.load_state_dict(torch.load(Config.save_model_dir + "saved_model.pth"))
     yolo_v4.to(device)
     yolo_v4.eval()
 

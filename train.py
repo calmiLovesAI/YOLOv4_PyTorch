@@ -12,6 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 from data.transform import Rescale, ToTensor
 from core.loss import YoloLoss
 from utils.metrics import MeanMetric
+from detect import detect_multiple_pictures
 
 
 if __name__ == '__main__':
@@ -28,6 +29,14 @@ if __name__ == '__main__':
 
     # model
     yolo_v4 = YOLOv4()
+
+    load_weights_from_epoch = Config.load_weights_from_epoch
+    if Config.load_weights_before_training:
+        yolo_v4.load_state_dict(torch.load(Config.save_model_dir + "epoch-{}.pth".format(load_weights_from_epoch)))
+        print("Successfully load weights!")
+    else:
+        load_weights_from_epoch = -1
+
     yolo_v4.to(device)
     yolo_v4.train()
 
@@ -47,7 +56,7 @@ if __name__ == '__main__':
     # tensorboard --logdir=runs
     writer = SummaryWriter()
 
-    for epoch in range(Config.epochs):
+    for epoch in range(load_weights_from_epoch + 1, Config.epochs):
         for step, batch_data in enumerate(dataloader):
             step_start_time = time.time()
 
@@ -92,6 +101,12 @@ if __name__ == '__main__':
         prob_mean.reset()
 
         scheduler.step()
+
+        if epoch % Config.save_frequency == 0:
+            torch.save(yolo_v4.state_dict(), Config.save_model_dir + "epoch-{}.pth".format(epoch))
+
+        if Config.test_images_during_training:
+            detect_multiple_pictures(model=yolo_v4, pictures=Config.test_images_dir_list, epoch=epoch)
 
     writer.flush()
     writer.close()
