@@ -8,21 +8,21 @@ from configuration import Config
 from utils.visualization import draw_boxes_on_image
 
 
-def detect_one_picture(model, picture_dir):
+def detect_one_picture(model, picture_dir, device):
     inference = Inference(picture_dir, device)
     boxes, scores, classes = inference(model)
-    boxes = boxes.detach().numpy().astype(np.int32)
-    scores = scores.detach().numpy().astype(np.float32)
-    classes = classes.detach().numpy().astype(np.int32)
+    boxes = boxes.cpu().detach().numpy().astype(np.int32)
+    scores = scores.cpu().detach().numpy().astype(np.float32)
+    classes = classes.cpu().detach().numpy().astype(np.int32)
     image = draw_boxes_on_image(cv2.imread(filename=picture_dir), boxes, scores, classes)
     return image
 
 
-def detect_multiple_pictures(model, pictures, epoch):
+def detect_multiple_pictures(model, pictures, epoch, device):
     index = 0
     for picture in pictures:
         index += 1
-        result = detect_one_picture(model=model, picture_dir=picture)
+        result = detect_one_picture(model=model, picture_dir=picture, device=device)
         cv2.imwrite(filename=Config.training_results_save_dir + "epoch-{}-picture-{}.jpg".format(epoch, index), img=result)
 
 
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     yolo_v4.to(device)
     yolo_v4.eval()
 
-    image = detect_one_picture(yolo_v4, Config.test_single_image_dir)
+    image = detect_one_picture(yolo_v4, Config.test_single_image_dir, device)
 
     cv2.namedWindow("detect result", flags=cv2.WINDOW_NORMAL)
     cv2.imshow("detect result", image)

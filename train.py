@@ -106,7 +106,7 @@ if __name__ == '__main__':
             torch.save(yolo_v4.state_dict(), Config.save_model_dir + "epoch-{}.pth".format(epoch))
 
         if Config.test_images_during_training:
-            detect_multiple_pictures(model=yolo_v4, pictures=Config.test_images_dir_list, epoch=epoch)
+            detect_multiple_pictures(model=yolo_v4, pictures=Config.test_images_dir_list, epoch=epoch, device=device)
 
     writer.flush()
     writer.close()
