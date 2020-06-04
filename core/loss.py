@@ -56,9 +56,9 @@ class YoloLoss(nn.Module):
         conf_loss = conf_focal * (respond_bbox * self.__sigmoid_cross_entropy_with_logits(labels=respond_bbox,
                                                                                           logits=raw_conf)
                                   +
-                                  respond_bgd *  self.__sigmoid_cross_entropy_with_logits(labels=respond_bbox,
-                                                                                          logits=raw_conf))
-        prob_loss = respond_bbox + self.__sigmoid_cross_entropy_with_logits(labels=label_prob,
+                                  respond_bgd * self.__sigmoid_cross_entropy_with_logits(labels=respond_bbox,
+                                                                                         logits=raw_conf))
+        prob_loss = respond_bbox * self.__sigmoid_cross_entropy_with_logits(labels=label_prob,
                                                                             logits=raw_prob)
 
         ciou_loss = torch.sum(ciou_loss, dim=(1, 2, 3, 4))
