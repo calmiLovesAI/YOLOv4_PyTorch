@@ -19,7 +19,7 @@ class Config:
     training_results_save_dir = "./test_pictures/"
     test_images_dir_list = ["", ""]
 
-    detect_on_cpu = False
+    detect_on_cpu = True
 
     # network structure
     yolo_strides = [8, 16, 32]
