@@ -47,20 +47,17 @@ class YoloLoss(nn.Module):
         pred_xywh = torch.unsqueeze(pred_xywh, dim=4)
         for _ in range(3):
             boxes = torch.unsqueeze(boxes, dim=1)
-        iou = IoU(box_1=pred_xywh, box_2=boxes, device=self.device).calculate_iou()
+        iou = IoU(box_1=pred_xywh, box_2=boxes).calculate_iou()
         max_iou, indices = torch.max(iou, dim=-1, keepdim=True)
         iou_mask = (max_iou < self.iou_loss_threshold).type(torch.float32)
         respond_bgd = (1.0 - respond_bbox) * iou_mask
 
-        pred_conf = torch.clamp(pred_conf, min=Config.avoid_loss_nan_value, max=1.0 - Config.avoid_loss_nan_value)
-        conf_loss = respond_bbox * (- torch.log(pred_conf)) + respond_bgd * (- torch.log(1.0 - pred_conf))
-
-        # conf_focal = torch.pow(respond_bbox - pred_conf, 2)
-        # conf_loss = conf_focal * (respond_bbox * self.__sigmoid_cross_entropy_with_logits(labels=respond_bbox,
-        #                                                                                   logits=raw_conf)
-        #                           +
-        #                           respond_bgd * self.__sigmoid_cross_entropy_with_logits(labels=respond_bbox,
-        #                                                                                  logits=raw_conf))
+        conf_focal = torch.pow(respond_bbox - pred_conf, 2)
+        conf_loss = conf_focal * (respond_bbox * self.__sigmoid_cross_entropy_with_logits(labels=respond_bbox,
+                                                                                          logits=raw_conf)
+                                  +
+                                  respond_bgd * self.__sigmoid_cross_entropy_with_logits(labels=respond_bbox,
+                                                                                         logits=raw_conf))
         prob_loss = respond_bbox * self.__sigmoid_cross_entropy_with_logits(labels=label_prob,
                                                                             logits=raw_prob)
 

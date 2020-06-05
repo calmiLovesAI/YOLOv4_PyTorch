@@ -5,7 +5,7 @@ from configuration import Config
 
 
 class IoU:
-    def __init__(self, box_1, box_2, device):
+    def __init__(self, box_1, box_2):
         """
         The last dimension of box_1 and box_2 are 4(center_x, center_y, w, h)
         :param box_1:
@@ -13,7 +13,6 @@ class IoU:
         """
         self.box_1 = box_1
         self.box_2 = box_2
-        self.device = device
 
     @staticmethod
     def __get_box_area(box):
@@ -37,7 +36,7 @@ class IoU:
         box_2_xyxy = IoU.__to_xyxy(self.box_2)
         intersect_min = torch.max(box_1_xyxy[..., 0:2], box_2_xyxy[..., 0:2])
         intersect_max = torch.min(box_1_xyxy[..., 2:4], box_2_xyxy[..., 2:4])
-        intersect_wh = torch.max(intersect_max - intersect_min, torch.tensor(0.0, device=self.device))
+        intersect_wh = torch.max(intersect_max - intersect_min, torch.zeros_like(intersect_max))
         intersect_area = intersect_wh[..., 0] * intersect_wh[..., 1]
         union_area = box_1_area + box_2_area - intersect_area
         iou = intersect_area / torch.clamp(union_area, min=Config.avoid_loss_nan_value)
@@ -45,10 +44,9 @@ class IoU:
 
 
 class GIoU:
-    def __init__(self, box_1, box_2, device):
+    def __init__(self, box_1, box_2):
         self.box_1 = GIoU.__fn(GIoU.__to_xyxy(box_1))
         self.box_2 = GIoU.__fn(GIoU.__to_xyxy(box_2))
-        self.device = device
 
     @staticmethod
     def __to_xyxy(box):
@@ -69,17 +67,17 @@ class GIoU:
 
         intersect_min = torch.max(self.box_1[..., 0:2], self.box_2[..., 0:2])
         intersect_max = torch.min(self.box_1[..., 2:4], self.box_2[..., 2:4])
-        intersect_wh = torch.max(intersect_max - intersect_min, torch.tensor(0.0, device=self.device))
+        intersect_wh = torch.max(intersect_max - intersect_min, torch.zeros_like(intersect_max))
         intersect_area = intersect_wh[..., 0] * intersect_wh[..., 1]
         union_area = box_1_area + box_2_area - intersect_area
-        iou = intersect_area / union_area
+        iou = intersect_area / torch.clamp(union_area, min=Config.avoid_loss_nan_value)
 
         enclose_left_up = torch.min(self.box_1[..., 0:2], self.box_2[..., 0:2])
         enclose_right_down = torch.max(self.box_1[..., 2:4], self.box_2[..., 2:4])
-        enclose = torch.max(enclose_right_down - enclose_left_up, torch.tensor(0.0, device=self.device))
+        enclose = torch.max(enclose_right_down - enclose_left_up, torch.zeros_like(enclose_right_down))
         enclose_area = enclose[..., 0] * enclose[..., 1]
 
-        giou = iou - 1.0 * (enclose_area - union_area) / enclose_area
+        giou = iou - 1.0 * (enclose_area - union_area) / torch.clamp(enclose_area, min=Config.avoid_loss_nan_value)
         return giou
 
 
