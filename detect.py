@@ -10,10 +10,11 @@ from utils.visualization import draw_boxes_on_image
 
 def detect_one_picture(model, picture_dir, device):
     inference = Inference(picture_dir, device)
-    boxes, scores, classes = inference(model)
-    boxes = boxes.cpu().detach().numpy().astype(np.int32)
-    scores = scores.cpu().detach().numpy().astype(np.float32)
-    classes = classes.cpu().detach().numpy().astype(np.int32)
+    with torch.no_grad():
+        boxes, scores, classes = inference(model)
+    boxes = boxes.cpu().numpy().astype(np.int32)
+    scores = scores.cpu().numpy().astype(np.float32)
+    classes = classes.cpu().numpy().astype(np.int32)
     image = draw_boxes_on_image(cv2.imread(filename=picture_dir), boxes, scores, classes)
     return image
 

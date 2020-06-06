@@ -46,8 +46,8 @@ class Config:
 
     avoid_loss_nan_value = 1e-10
 
-    score_threshold = 0.5
-    nms_iou_threshold = 0.3
+    score_threshold = 0.6
+    nms_iou_threshold = 0.5
 
 
     @classmethod
