@@ -74,7 +74,7 @@ class GroundTruth:
         self.output_feature_sizes = [[Config.input_size[0] // i, Config.input_size[1] // i] for i in Config.yolo_strides]
         self.num_classes = Config.num_classes
         self.anchor_num_per_level = Config.anchor_num_per_level
-        self.max_bbox_per_level = Config.max_boxes_per_image
+        self.max_bbox_per_level = Config.max_bbox_per_level
         self.strides = torch.tensor(Config.yolo_strides, dtype=torch.float32, device=device)
         self.anchors = Config.get_anchors()
 
@@ -118,9 +118,9 @@ class GroundTruth:
                              dtype=torch.float32, device=self.device) for i in range(3)]
         bboxes_xywh = [torch.zeros(self.max_bbox_per_level, 4, dtype=torch.float32, device=self.device) for _ in range(3)]
         bboxes_num = torch.zeros(3, dtype=torch.float32, device=self.device)
-        for i in range(bboxes.size()[0]):
-            bbox_coord = bboxes[i, :4]
-            bbox_class_idx = bboxes[i, 4].type(dtype=torch.int32)
+        for j in range(bboxes.size()[0]):
+            bbox_coord = bboxes[j, :4]
+            bbox_class_idx = bboxes[j, 4].type(dtype=torch.int32)
             one_hot = torch.zeros(self.num_classes, dtype=torch.float32, device=self.device)
             one_hot[bbox_class_idx] = 1.0
             uniform_distribution = torch.full(size=(self.num_classes, ), fill_value=1.0 / self.num_classes, dtype=torch.float32, device=self.device)

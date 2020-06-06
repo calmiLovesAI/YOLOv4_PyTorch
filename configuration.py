@@ -41,6 +41,7 @@ class Config:
 
     txt_file_dir = "data.txt"
     max_boxes_per_image = 50
+    max_bbox_per_level = 150
 
     iou_loss_threshold = 0.5
 
