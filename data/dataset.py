@@ -133,7 +133,7 @@ class GroundTruth:
             positive_exist = False
             for i in range(3):
                 anchors_xywh = torch.zeros(self.anchor_num_per_level, 4, dtype=torch.float32, device=self.device)
-                anchors_xywh[:, 0:2] = torch.floor(bbox_xywh_scaled[i, 0:2]).type(dtype=torch.int32) + 0.5
+                anchors_xywh[:, 0:2] = torch.floor(bbox_xywh_scaled[i, 0:2]).to(dtype=torch.int32) + 0.5
                 anchors_xywh[:, 2:4] = self.anchors[i]
 
                 iou_value = IoU(box_1=torch.unsqueeze(bbox_xywh_scaled[i], dim=0), box_2=anchors_xywh).calculate_iou()
@@ -141,7 +141,7 @@ class GroundTruth:
                 iou_mask = iou_value > 0.3
 
                 if iou_mask.any():
-                    x_ind, y_ind = torch.floor(bbox_xywh_scaled[i, 0:2]).type(torch.int32)
+                    x_ind, y_ind = torch.floor(bbox_xywh_scaled[i, 0:2]).to(torch.int32)
                     label[i][y_ind, x_ind, iou_mask, :] = 0
                     label[i][y_ind, x_ind, iou_mask, 0:4] = bbox_xywh
                     label[i][y_ind, x_ind, iou_mask, 4:5] = 1.0
@@ -159,7 +159,7 @@ class GroundTruth:
                 best_detect = best_anchor_ind // self.anchor_num_per_level
                 best_anchor = int(best_anchor_ind % self.anchor_num_per_level)
 
-                x_ind, y_ind = torch.floor(bbox_xywh_scaled[best_detect, 0:2]).type(torch.int32)
+                x_ind, y_ind = torch.floor(bbox_xywh_scaled[best_detect, 0:2]).to(torch.int32)
                 label[best_detect][y_ind, x_ind, best_anchor, :] = 0
                 label[best_detect][y_ind, x_ind, best_anchor, 0:4] = bbox_xywh
                 label[best_detect][y_ind, x_ind, best_anchor, 4:5] = 1.0
