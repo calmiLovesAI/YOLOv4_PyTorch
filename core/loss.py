@@ -13,8 +13,8 @@ class YoloLoss(nn.Module):
         self.input_size = torch.tensor(data=Config.input_size, dtype=torch.float32, device=device)
         self.iou_loss_threshold = Config.iou_loss_threshold
 
-        self.alpha = 0.25
-        self.gamma = 2
+        # self.alpha = 0.25
+        # self.gamma = 2
 
     def forward(self, y_pred, y_true, yolo_outputs):
         ciou_loss = 0
@@ -39,6 +39,7 @@ class YoloLoss(nn.Module):
         raw_prob = feature[..., 5:]
         pred_xywh = pred[..., 0:4]
         pred_conf = pred[..., 4:5]
+        pred_prob = pred[..., 5:]
         label_xywh = label[..., 0:4]
         respond_bbox = label[..., 4:5]
         label_prob = label[..., 5:]
@@ -64,13 +65,16 @@ class YoloLoss(nn.Module):
         # conf_loss = alpha_factor * modulating_factor * ce
 
         conf_focal = torch.pow(respond_bbox - pred_conf, 2)
-        conf_loss = conf_focal * (respond_bbox * self.__sigmoid_cross_entropy_with_logits(labels=respond_bbox,
-                                                                                          logits=raw_conf)
-                                  +
-                                  respond_bgd * self.__sigmoid_cross_entropy_with_logits(labels=respond_bbox,
-                                                                                         logits=raw_conf))
-        prob_loss = respond_bbox * self.__sigmoid_cross_entropy_with_logits(labels=label_prob,
-                                                                            logits=raw_prob)
+        conf_loss = conf_focal * (respond_bbox * F.binary_cross_entropy(pred_conf, respond_bbox)+
+                                  respond_bgd * F.binary_cross_entropy(pred_conf, respond_bbox))
+        # conf_loss = conf_focal * (respond_bbox * self.__sigmoid_cross_entropy_with_logits(labels=respond_bbox,
+        #                                                                                   logits=raw_conf)
+        #                           +
+        #                           respond_bgd * self.__sigmoid_cross_entropy_with_logits(labels=respond_bbox,
+        #                                                                                  logits=raw_conf))
+        # prob_loss = respond_bbox * self.__sigmoid_cross_entropy_with_logits(labels=label_prob,
+        #                                                                     logits=raw_prob)
+        prob_loss = respond_bbox * F.binary_cross_entropy(pred_prob, label_prob)
 
         ciou_loss = torch.sum(ciou_loss, dim=(1, 2, 3, 4))
         ciou_loss = torch.mean(ciou_loss)

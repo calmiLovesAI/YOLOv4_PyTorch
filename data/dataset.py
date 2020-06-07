@@ -123,8 +123,8 @@ class GroundTruth:
             bbox_class_idx = bboxes[j, 4].type(dtype=torch.int32)
             one_hot = torch.zeros(self.num_classes, dtype=torch.float32, device=self.device)
             one_hot[bbox_class_idx] = 1.0
-            uniform_distribution = torch.full(size=(self.num_classes, ), fill_value=1.0 / self.num_classes, dtype=torch.float32, device=self.device)
-            smooth_one_hot = one_hot * (1 - self.delta) + self.delta * uniform_distribution
+            # uniform_distribution = torch.full(size=(self.num_classes, ), fill_value=1.0 / self.num_classes, dtype=torch.float32, device=self.device)
+            # smooth_one_hot = one_hot * (1 - self.delta) + self.delta * uniform_distribution
 
             bbox_xywh = torch.cat(tensors=((bbox_coord[2:] + bbox_coord[:2]) * 0.5, bbox_coord[2:] - bbox_coord[:2]), dim=-1)
             bbox_xywh_scaled = torch.unsqueeze(bbox_xywh, dim=0) / torch.unsqueeze(self.strides, dim=-1)
@@ -134,7 +134,7 @@ class GroundTruth:
             for i in range(3):
                 anchors_xywh = torch.zeros(self.anchor_num_per_level, 4, dtype=torch.float32, device=self.device)
                 anchors_xywh[:, 0:2] = torch.floor(bbox_xywh_scaled[i, 0:2]).to(dtype=torch.int32) + 0.5
-                anchors_xywh[:, 2:4] = self.anchors[i]
+                anchors_xywh[:, 2:4] = self.anchors[i] / self.strides[i]
 
                 iou_value = IoU(box_1=torch.unsqueeze(bbox_xywh_scaled[i], dim=0), box_2=anchors_xywh).calculate_iou()
                 iou.append(iou_value)
@@ -145,7 +145,7 @@ class GroundTruth:
                     label[i][y_ind, x_ind, iou_mask, :] = 0
                     label[i][y_ind, x_ind, iou_mask, 0:4] = bbox_xywh
                     label[i][y_ind, x_ind, iou_mask, 4:5] = 1.0
-                    label[i][y_ind, x_ind, iou_mask, 5:] = smooth_one_hot
+                    label[i][y_ind, x_ind, iou_mask, 5:] = one_hot
 
                     bbox_ind = int(bboxes_num[i] % self.max_bbox_per_level)
                     bboxes_xywh[i][bbox_ind, :4] = bbox_xywh
@@ -163,7 +163,7 @@ class GroundTruth:
                 label[best_detect][y_ind, x_ind, best_anchor, :] = 0
                 label[best_detect][y_ind, x_ind, best_anchor, 0:4] = bbox_xywh
                 label[best_detect][y_ind, x_ind, best_anchor, 4:5] = 1.0
-                label[best_detect][y_ind, x_ind, best_anchor, 5:] = smooth_one_hot
+                label[best_detect][y_ind, x_ind, best_anchor, 5:] = one_hot
 
                 bbox_ind = int(bboxes_num[best_detect] % self.max_bbox_per_level)
                 bboxes_xywh[best_detect][bbox_ind, :4] = bbox_xywh
