@@ -3,7 +3,7 @@ import torch
 
 class Config:
     epochs = 50
-    batch_size = 5
+    batch_size = 2
 
     input_size = (416, 416)
 
@@ -24,8 +24,10 @@ class Config:
     # network structure
     yolo_strides = [8, 16, 32]
     yolo_anchors = [12, 16, 19, 36, 40, 28, 36, 75, 76, 55, 72, 146, 142, 110, 192, 243, 459, 401]
+    anchors_index = [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
     scale = [1.2, 1.1, 1.05]
     anchor_num_per_level = 3
+    num_yolo_outputs = len(yolo_strides)
 
     # dataset
     num_classes = 20
@@ -43,7 +45,7 @@ class Config:
     max_boxes_per_image = 50
     max_bbox_per_level = 150
 
-    iou_loss_threshold = 0.5
+    ignore_threshold = 0.5
 
     avoid_loss_nan_value = 1e-10
 

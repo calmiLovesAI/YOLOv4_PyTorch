@@ -1,21 +1,20 @@
 import torch
 
 from configuration import Config
-from core.loss import YoloLoss
 
 
-class PostProcessing:
-    @staticmethod
-    def training_procedure(yolo_outputs, device):
-        generate_prediction = GeneratePrediction(device)
-        bboxes = []
-        for i, feature in enumerate(yolo_outputs):
-            bbox = generate_prediction(feature=feature, feature_index=i)
-            bboxes.append(bbox)
-        return bboxes
-
-    def testing_procedure(self):
-        pass
+# class PostProcessing:
+#     @staticmethod
+#     def training_procedure(yolo_outputs, device):
+#         generate_prediction = GeneratePrediction(device)
+#         bboxes = []
+#         for i, feature in enumerate(yolo_outputs):
+#             bbox = generate_prediction(feature=feature, feature_index=i)
+#             bboxes.append(bbox)
+#         return bboxes
+#
+#     def testing_procedure(self):
+#         pass
 
 
 class GeneratePrediction:
@@ -24,7 +23,7 @@ class GeneratePrediction:
         self.num_classes = torch.tensor(Config.num_classes, device=device)
         self.strides = torch.tensor(Config.yolo_strides, device=device)
         self.anchors = Config.get_anchors().to(device)
-        self.scale = torch.tensor(Config.scale, device=device)
+        # self.scale = torch.tensor(Config.scale, device=device)
 
     def __meshgrid(self, size, B):
         x = torch.arange(start=0, end=size[1], dtype=torch.float32, device=self.device)
@@ -45,14 +44,14 @@ class GeneratePrediction:
         :param kwargs:
         :return: Tensor, size: (batch_size, feature_map_size, feature_map_size, 3, num_classes + 5)
         """
-        feature = feature.permute(0, 2, 3, 1)
+        # feature = feature.permute(0, 2, 3, 1)
         shape = feature.size()
         feature = torch.reshape(feature, (shape[0], shape[1], shape[2], 3, -1))
         dx_dy, dw_dh, conf, prob = torch.split(feature, [2, 2, 1, self.num_classes], -1)
 
         xy_grid = self.__meshgrid(size=shape[1:3], B=shape[0])
 
-        pred_xy = self.strides[feature_index] * (torch.sigmoid(dx_dy) * self.scale[feature_index] - 0.5 * (self.scale[feature_index] - 1) + xy_grid)
+        pred_xy = self.strides[feature_index] * (torch.sigmoid(dx_dy) + xy_grid)
         pred_wh = torch.exp(dw_dh) * self.anchors[feature_index]
         pred_xywh = torch.cat(tensors=(pred_xy, pred_wh), dim=-1)
         pred_conf = torch.sigmoid(conf)

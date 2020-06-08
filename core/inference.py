@@ -69,7 +69,7 @@ class Inference:
 
             xy_grid = self.__meshgrid(pred.size()[1:3])
 
-            pred_xy = self.strides[i] * ((self.scale[i] * torch.sigmoid(raw_dxdy)) - 0.5 * (self.scale[i] - 1) + xy_grid)
+            pred_xy = self.strides[i] * (torch.sigmoid(raw_dxdy) + xy_grid)
             pred_wh = torch.exp(raw_dwdh) * self.anchors[i]
 
             pred[:, :, :, :,  0:4] = torch.cat(tensors=(pred_xy, pred_wh), dim=-1)

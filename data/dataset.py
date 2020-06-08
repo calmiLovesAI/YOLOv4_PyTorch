@@ -68,6 +68,71 @@ class YoloDataset(Dataset):
         return image_array, labels_array
 
 
+class GroundTruth:
+    def __init__(self, device):
+        self.device = device
+        self.output_feature_sizes = [[Config.input_size[0] // i, Config.input_size[1] // i] for i in Config.yolo_strides]
+        self.num_classes = Config.num_classes
+        self.anchor_num_per_level = Config.anchor_num_per_level
+        self.strides = torch.tensor(Config.yolo_strides, dtype=torch.float32, device=device)
+        self.anchors = Config.get_anchors().reshape(shape=(-1, 2)).to(self.device)
+
+    def __call__(self, labels, *args, **kwargs):
+        """
+
+        :param labels: Tensor, shape: (batch_size, Config.max_boxes_per_image, 5)
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        batch_size = labels.size()[0]
+        batch_label_small = torch.zeros(batch_size, self.output_feature_sizes[0][0],
+                                        self.output_feature_sizes[0][1], self.anchor_num_per_level,
+                                        5 + self.num_classes, dtype=torch.float32, device=self.device)
+        batch_label_middle = torch.zeros(batch_size, self.output_feature_sizes[1][0],
+                                         self.output_feature_sizes[1][1], self.anchor_num_per_level,
+                                         5 + self.num_classes, dtype=torch.float32, device=self.device)
+        batch_label_large = torch.zeros(batch_size, self.output_feature_sizes[2][0],
+                                        self.output_feature_sizes[2][1], self.anchor_num_per_level,
+                                        5 + self.num_classes, dtype=torch.float32, device=self.device)
+
+        batch_true_label = [batch_label_small, batch_label_middle, batch_label_large]
+
+        center_xy = (labels[..., 0:2] + labels[..., 2:4]) // 2
+        wh = labels[..., 2:4] - labels[..., 0:2]
+        boxes_xywh = torch.cat(tensors=(center_xy, wh), dim=-1)
+
+
+        valid_mask = (wh[..., 0] > 0) & (wh[..., 1] > 0)
+
+        for b in range(batch_size):
+            valid_boxes = boxes_xywh[b, valid_mask[b]]
+            num_valid_boxes = valid_boxes.size()[0]
+            if num_valid_boxes == 0:
+                continue
+            anchors_xywh = torch.cat(tensors=(torch.zeros_like(self.anchors), self.anchors), dim=-1)
+            valid_boxes[..., 0:2] = torch.zeros(num_valid_boxes, 2, dtype=torch.float32, device=self.device)
+            iou_value = IoU(box_1=torch.unsqueeze(anchors_xywh, dim=0), box_2=torch.unsqueeze(valid_boxes, dim=1)).calculate_iou()
+
+            best_anchor = torch.argmax(iou_value, dim=-1)
+
+            for i, n in enumerate(best_anchor):
+                for s in range(self.anchor_num_per_level):
+                    if n in Config.anchors_index[s]:
+                        x = torch.floor(boxes_xywh[b, i, 0] / self.strides[s]).to(torch.int32)
+                        y = torch.floor(boxes_xywh[b, i, 1] / self.strides[s]).to(torch.int32)
+                        anchor_id = Config.anchors_index[s].index(n)
+                        class_id = labels[b, i, 4].to(torch.int32)
+                        batch_true_label[s][b, y, x, anchor_id, 0:4] = boxes_xywh[b, i]
+                        batch_true_label[s][b, y, x, anchor_id, 4] = 1.0
+                        batch_true_label[s][b, y, x, anchor_id, 5 + class_id] = 1.0
+
+        return batch_true_label
+
+
+
+
+
 # class GroundTruth:
 #     def __init__(self, device):
 #         self.device = device

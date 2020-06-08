@@ -2,13 +2,13 @@ import torch
 import torch.optim as optim
 import time
 
-from core.procedure import PostProcessing
+
 from core.yolo_v4 import YOLOv4
 from configuration import Config
 from data.dataset import YoloDataset, GroundTruth
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 from data.transform import Rescale, ToTensor
 from core.loss import YoloLoss
 from utils.metrics import MeanMetric
@@ -24,7 +24,7 @@ if __name__ == '__main__':
         Rescale(output_size=Config.input_size),
         ToTensor()
     ]))
-    dataloader = DataLoader(dataset=dataset, batch_size=Config.batch_size, shuffle=True)
+    dataloader = DataLoader(dataset=dataset, batch_size=Config.batch_size, shuffle=False)
     steps_per_epoch = len(dataset) // Config.batch_size
 
     # model
@@ -48,13 +48,13 @@ if __name__ == '__main__':
     optimizer = optim.AdamW(params=yolo_v4.parameters(), lr=1e-4)
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=0.96)
 
-    ciou_mean = MeanMetric()
+    reg_mean = MeanMetric()
     conf_mean = MeanMetric()
     prob_mean = MeanMetric()
     total_loss_mean = MeanMetric()
 
     # tensorboard --logdir=runs
-    writer = SummaryWriter()
+    # writer = SummaryWriter()
 
     for epoch in range(load_weights_from_epoch + 1, Config.epochs):
         for step, batch_data in enumerate(dataloader):
@@ -65,13 +65,13 @@ if __name__ == '__main__':
 
             optimizer.zero_grad()
             outputs = yolo_v4(batch_images)
-            preds = PostProcessing.training_procedure(outputs, device)
+            # preds = PostProcessing.training_procedure(outputs, device)
             target = gt(labels=batch_labels)
-            ciou_loss, conf_loss, prob_loss = loss_object(y_pred=preds, y_true=target, yolo_outputs=outputs)
-            total_loss = ciou_loss + conf_loss + prob_loss
+            reg_loss, conf_loss, prob_loss = loss_object(y_pred=outputs, y_true=target)
+            total_loss = reg_loss + conf_loss + prob_loss
 
             total_loss_mean.update(total_loss.item())
-            ciou_mean.update(ciou_loss.item())
+            reg_mean.update(reg_loss.item())
             conf_mean.update(conf_loss.item())
             prob_mean.update(prob_loss.item())
 
@@ -81,22 +81,22 @@ if __name__ == '__main__':
             step_end_time = time.time()
 
             print("Epoch: {}/{}, step: {}/{}, total_loss: {}, "
-                  "ciou_loss: {}, conf_loss: {}, prob_loss: {}, time_cost: {:.3f}s".format(epoch,
+                  "reg_loss: {}, conf_loss: {}, prob_loss: {}, time_cost: {:.3f}s".format(epoch,
                                                                                            Config.epochs,
                                                                                            step,
                                                                                            steps_per_epoch,
                                                                                            total_loss_mean.result(),
-                                                                                           ciou_mean.result(),
+                                                                                           reg_mean.result(),
                                                                                            conf_mean.result(),
                                                                                            prob_mean.result(),
                                                                                            step_end_time - step_start_time))
-        writer.add_scalar("total_loss", total_loss_mean.result(), epoch)
-        writer.add_scalar("ciou_loss", ciou_mean.result(), epoch)
-        writer.add_scalar("conf_loss", conf_mean.result(), epoch)
-        writer.add_scalar("prob_loss", prob_mean.result(), epoch)
+        # writer.add_scalar("total_loss", total_loss_mean.result(), epoch)
+        # writer.add_scalar("ciou_loss", ciou_mean.result(), epoch)
+        # writer.add_scalar("conf_loss", conf_mean.result(), epoch)
+        # writer.add_scalar("prob_loss", prob_mean.result(), epoch)
 
         total_loss_mean.reset()
-        ciou_mean.reset()
+        reg_mean.reset()
         conf_mean.reset()
         prob_mean.reset()
 
@@ -108,8 +108,8 @@ if __name__ == '__main__':
         if Config.test_images_during_training:
             detect_multiple_pictures(model=yolo_v4, pictures=Config.test_images_dir_list, epoch=epoch, device=device)
 
-    writer.flush()
-    writer.close()
+    # writer.flush()
+    # writer.close()
 
     torch.save(yolo_v4.state_dict(), Config.save_model_dir + "saved_model.pth")
 
