@@ -17,8 +17,7 @@ class Inference:
         self.score_threshold = Config.score_threshold
         self.nms_iou_threshold  = Config.nms_iou_threshold
 
-        self.image = self.__read_image(image_dir)
-        self.image_size = self.image.shape[2:]
+        self.image, self.image_size = self.__read_image(image_dir)
 
     def __call__(self, model, *args, **kwargs):
 
@@ -36,11 +35,12 @@ class Inference:
     def __read_image(self, image_dir):
         image_array = cv2.imread(filename=image_dir)
         image_array = cv2.cvtColor(image_array, cv2.COLOR_BGR2RGB)
+        image_size = image_array.shape[:2]
         image_array = image_array / 255.0
         image_array, _, _, _, _, _ = ResizeTool.resize_image(image_array, Config.input_size)
         image_tensor = torch.from_numpy(image_array)
         image_tensor = image_tensor.permute(2, 0, 1).unsqueeze(dim=0).to(torch.float32).to(self.device)
-        return image_tensor
+        return image_tensor, image_size
 
     def __decode(self, feature):
         feature = feature.permute(0, 2, 3, 1)
@@ -56,7 +56,7 @@ class Inference:
         x = torch.arange(start=0, end=size[1], dtype=torch.float32, device=self.device)
         y = torch.arange(start=0, end=size[0], dtype=torch.float32, device=self.device)
         x, y = torch.meshgrid([x, y])
-        xy_grid = torch.stack(tensors=(x, y), dim=-1)
+        xy_grid = torch.stack(tensors=(y, x), dim=-1)
         xy_grid = torch.unsqueeze(xy_grid, dim=2)
         xy_grid = torch.unsqueeze(xy_grid, dim=0)
         xy_grid = xy_grid.repeat(1, 1, 1, 3, 1)

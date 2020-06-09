@@ -3,7 +3,7 @@ import torch
 
 class Config:
     epochs = 50
-    batch_size = 5
+    batch_size = 6
 
     input_size = (416, 416)
 
@@ -47,7 +47,7 @@ class Config:
 
     avoid_loss_nan_value = 1e-10
 
-    score_threshold = 0.6
+    score_threshold = 0.5
     nms_iou_threshold = 0.2
 
 

@@ -30,7 +30,7 @@ class GeneratePrediction:
         x = torch.arange(start=0, end=size[1], dtype=torch.float32, device=self.device)
         y = torch.arange(start=0, end=size[0], dtype=torch.float32, device=self.device)
         x, y = torch.meshgrid([x, y])
-        xy_grid = torch.stack(tensors=(x, y), dim=-1)
+        xy_grid = torch.stack(tensors=(y, x), dim=-1)
         xy_grid = torch.unsqueeze(xy_grid, dim=2)
         xy_grid = torch.unsqueeze(xy_grid, dim=0)
         xy_grid = xy_grid.repeat(B, 1, 1, 3, 1)
