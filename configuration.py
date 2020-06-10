@@ -59,9 +59,13 @@ class Config:
         return torch.tensor(cls.yolo_anchors, dtype=torch.float32).reshape(3, 3, 2)
 
     @classmethod
-    def get_class_names(cls, from_file=False, file_dir=None):
-        if from_file:
-            with open(file=file_dir, mode="r", encoding="utf-8") as f:
+    def class2idx(cls):
+        return dict((v, k) for k, v in Config.get_class_names().items())
+
+    @classmethod
+    def get_class_names(cls):
+        if cls.class_from_file:
+            with open(file=cls.class_file_dir, mode="r", encoding="utf-8") as f:
                 class_names = dict((i, name.strip("\n")) for i, name in enumerate(f.readlines()))
         else:
             class_names = cls.pascal_voc_classes

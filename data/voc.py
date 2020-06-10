@@ -29,7 +29,7 @@ class VOC:
         class_ids = []
         bboxes = []
         for i, obj in enumerate(objects):
-            class_id = Config.pascal_voc_classes[obj.find("name").text]
+            class_id = Config.class2idx()[obj.find("name").text]
             bbox = obj.find("bndbox")
             xmin = float(bbox.find("xmin").text)
             ymin = float(bbox.find("ymin").text)
