@@ -4,7 +4,7 @@ from configuration import Config
 
 
 def draw_boxes_on_image(image, boxes, scores, classes):
-    idx2class_dict = Config.get_class_names()
+    idx2class_dict = Config.get_class_names(from_file=Config.class_from_file, file_dir=Config.class_file_dir)
     num_boxes = boxes.shape[0]
     for i in range(num_boxes):
         class_and_score = "{}: {:.3f}".format(str(idx2class_dict[classes[i]]), scores[i])

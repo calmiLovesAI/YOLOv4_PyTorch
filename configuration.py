@@ -39,6 +39,8 @@ class Config:
                           6: "sheep", 7: "aeroplane", 8: "bicycle", 9: "boat", 10: "bus",
                           11: "car", 12: "motorbike", 13: "train", 14: "bottle", 15: "chair",
                           16: "diningtable", 17: "pottedplant", 18: "sofa", 19: "tvmonitor"}
+    class_file_dir = ""
+    class_from_file = False
 
     txt_file_dir = "data.txt"
     max_boxes_per_image = 50
