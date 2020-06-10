@@ -9,7 +9,7 @@ class Config:
 
     # save model
     save_model_dir = "./saved_model/"
-    save_frequency = 10
+    save_frequency = 20
     load_weights_before_training = False
     load_weights_from_epoch = 0
 

@@ -3,18 +3,6 @@ import torch
 from configuration import Config
 
 
-# class PostProcessing:
-#     @staticmethod
-#     def training_procedure(yolo_outputs, device):
-#         generate_prediction = GeneratePrediction(device)
-#         bboxes = []
-#         for i, feature in enumerate(yolo_outputs):
-#             bbox = generate_prediction(feature=feature, feature_index=i)
-#             bboxes.append(bbox)
-#         return bboxes
-#
-#     def testing_procedure(self):
-#         pass
 
 
 class GeneratePrediction:
