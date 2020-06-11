@@ -24,7 +24,7 @@ if __name__ == '__main__':
         Rescale(output_size=Config.input_size),
         ToTensor()
     ]))
-    dataloader = DataLoader(dataset=dataset, batch_size=Config.batch_size, shuffle=False)
+    dataloader = DataLoader(dataset=dataset, batch_size=Config.batch_size, shuffle=True)
     steps_per_epoch = len(dataset) // Config.batch_size
 
     # model
