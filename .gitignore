@@ -8,3 +8,4 @@ data.txt
 /runs
 /test_pictures/*
 !/test_pictures/README.md
+anchors.txt

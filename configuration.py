@@ -24,6 +24,8 @@ class Config:
     # network structure
     yolo_strides = [8, 16, 32]
     yolo_anchors = [12, 16, 19, 36, 40, 28, 36, 75, 76, 55, 72, 146, 142, 110, 192, 243, 459, 401]
+    anchors_file = "anchors.txt"
+    anchors_from_file = True
     anchors_index = [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
     scale = [1.2, 1.1, 1.05]
     anchor_num_per_level = 3
@@ -56,7 +58,14 @@ class Config:
 
     @classmethod
     def get_anchors(cls):
-        return torch.tensor(cls.yolo_anchors, dtype=torch.float32).reshape(3, 3, 2)
+        if cls.anchors_from_file:
+            with open(file=cls.anchors_file, mode="r", encoding="utf-8") as f:
+                anchors_str = f.readline()
+            anchors_list = anchors_str.split(", ")
+            anchors = [float(i) for i in anchors_list]
+            return torch.tensor(anchors, dtype=torch.float32).reshape(3, 3, 2)
+        else:
+            return torch.tensor(cls.yolo_anchors, dtype=torch.float32).reshape(3, 3, 2)
 
     @classmethod
     def class2idx(cls):
