@@ -1,5 +1,8 @@
 import torch
+import numpy as np
 
+from torchvision import transforms
+from PIL import Image
 from utils.resize import ResizeTool
 
 
@@ -35,4 +38,19 @@ class ToTensor:
         return {
             "image": image_tensor.type(torch.float32),
             "label": label_tensor.type(torch.float32)
+        }
+
+
+class ColorTransform:
+    def __init__(self, brightness=0, contrast=0, saturation=0, hue=0):
+        self.color_jitter = transforms.ColorJitter(brightness, contrast, saturation, hue)
+
+    def __call__(self, sample, *args, **kwargs):
+        image, label = sample["image"], sample["label"]
+        image = Image.fromarray(image)
+        image = self.color_jitter(image)
+        image = np.array(image)
+        return {
+            "image": image,
+            "label": label
         }

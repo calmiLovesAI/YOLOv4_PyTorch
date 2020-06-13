@@ -9,7 +9,7 @@ from data.dataset import YoloDataset, GroundTruth
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from data.transform import Rescale, ToTensor
+from data.transform import Rescale, ToTensor, ColorTransform
 from core.loss import YoloLoss
 from utils.metrics import MeanMetric
 from detect import detect_multiple_pictures
@@ -21,6 +21,7 @@ if __name__ == '__main__':
 
     # dataset
     dataset = YoloDataset(transform=transforms.Compose([
+        ColorTransform(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.2),
         Rescale(output_size=Config.input_size),
         ToTensor()
     ]))
@@ -89,6 +90,7 @@ if __name__ == '__main__':
                                                                                            conf_mean.result(),
                                                                                            prob_mean.result(),
                                                                                            step_end_time - step_start_time))
+
         writer.add_scalar("total_loss", total_loss_mean.result(), epoch)
         writer.add_scalar("ciou_loss", ciou_mean.result(), epoch)
         writer.add_scalar("conf_loss", conf_mean.result(), epoch)
