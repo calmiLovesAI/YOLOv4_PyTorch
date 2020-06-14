@@ -112,22 +112,23 @@ if __name__ == '__main__':
         scheduler.step()
 
         # validation
-        yolo_v4.eval()
-        valid_loss = 0
-        length = 0
-        with torch.no_grad():
-            for i, valid_data in enumerate(valid_loader):
-                length += 1
-                valid_images, valid_labels = valid_data["image"], valid_data["label"]
-                valid_images, valid_labels = valid_images.to(device), valid_labels.to(device)
+        if len(valid_dataset):
+            yolo_v4.eval()
+            valid_loss = 0
+            length = 0
+            with torch.no_grad():
+                for i, valid_data in enumerate(valid_loader):
+                    length += 1
+                    valid_images, valid_labels = valid_data["image"], valid_data["label"]
+                    valid_images, valid_labels = valid_images.to(device), valid_labels.to(device)
 
-                outputs = yolo_v4(valid_images)
-                target = gt(labels=valid_labels)
-                ciou_loss, conf_loss, prob_loss = loss_object(y_pred=outputs, y_true=target)
-                valid_loss += ciou_loss.item() + conf_loss.item() + prob_loss.item()
-        print("Epoch: {}/{}, valid set: loss: {}".format(epoch,
-                                                         Config.epochs,
-                                                         valid_loss / length))
+                    outputs = yolo_v4(valid_images)
+                    target = gt(labels=valid_labels)
+                    ciou_loss, conf_loss, prob_loss = loss_object(y_pred=outputs, y_true=target)
+                    valid_loss += ciou_loss.item() + conf_loss.item() + prob_loss.item()
+            print("Epoch: {}/{}, valid set: loss: {}".format(epoch,
+                                                             Config.epochs,
+                                                             valid_loss / length))
 
         if epoch % Config.save_frequency == 0:
             torch.save(yolo_v4.state_dict(), Config.save_model_dir + "epoch-{}.pth".format(epoch))
