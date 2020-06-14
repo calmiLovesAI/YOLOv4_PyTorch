@@ -10,9 +10,8 @@ from utils.iou import IoU
 
 
 class YoloDataset(Dataset):
-    def __init__(self, transform=None):
-        self.annotation_dir = Config.txt_file_dir
-        self.batch_size = Config.batch_size
+    def __init__(self, annotation_dir, transform=None):
+        self.annotation_dir = annotation_dir
         self.max_boxes_per_image = Config.max_boxes_per_image
         self.transform = transform
 

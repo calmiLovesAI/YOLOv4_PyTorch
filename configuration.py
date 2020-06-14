@@ -21,6 +21,12 @@ class Config:
 
     detect_on_cpu = True
 
+    # train set and valid set
+    txt_file_dir = "data.txt"
+    valid_ratio = 0.1
+    train_txt = "./train.txt"
+    valid_txt = "./valid.txt"
+
     # network structure
     yolo_strides = [8, 16, 32]
     yolo_anchors = [12, 16, 19, 36, 40, 28, 36, 75, 76, 55, 72, 146, 142, 110, 192, 243, 459, 401]
@@ -32,6 +38,7 @@ class Config:
     num_yolo_outputs = len(yolo_strides)
 
     # dataset
+    dataset_type = "voc"
     num_classes = 20
     pascal_voc_root = "./data/datasets/VOCdevkit/VOC2012/"
     pascal_voc_images = pascal_voc_root + "JPEGImages"
@@ -44,7 +51,6 @@ class Config:
     class_file_dir = ""
     class_from_file = False
 
-    txt_file_dir = "data.txt"
     max_boxes_per_image = 50
     max_bbox_per_level = 150
 

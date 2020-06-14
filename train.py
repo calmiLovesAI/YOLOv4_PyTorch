@@ -15,18 +15,25 @@ from utils.metrics import MeanMetric
 from detect import detect_multiple_pictures
 
 
+
 if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("device: ", device)
 
     # dataset
-    dataset = YoloDataset(transform=transforms.Compose([
+    train_dataset = YoloDataset(annotation_dir=Config.train_txt, transform=transforms.Compose([
         ColorTransform(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.2),
         Rescale(output_size=Config.input_size),
         ToTensor()
     ]))
-    dataloader = DataLoader(dataset=dataset, batch_size=Config.batch_size, shuffle=True)
-    steps_per_epoch = len(dataset) // Config.batch_size
+    valid_dataset = YoloDataset(annotation_dir=Config.valid_txt, transform=transforms.Compose([
+        Rescale(output_size=Config.input_size),
+        ToTensor()
+    ]))
+
+    train_loader = DataLoader(dataset=train_dataset, batch_size=Config.batch_size, shuffle=True)
+    valid_loader = DataLoader(dataset=valid_dataset, batch_size=Config.batch_size, shuffle=False)
+    steps_per_epoch = len(train_dataset) // Config.batch_size
 
     # model
     yolo_v4 = YOLOv4()
@@ -39,7 +46,6 @@ if __name__ == '__main__':
         load_weights_from_epoch = -1
 
     yolo_v4.to(device)
-    yolo_v4.train()
 
     # loss
     gt = GroundTruth(device=device)
@@ -58,15 +64,17 @@ if __name__ == '__main__':
     writer = SummaryWriter()
 
     for epoch in range(load_weights_from_epoch + 1, Config.epochs):
-        for step, batch_data in enumerate(dataloader):
+        # train
+        yolo_v4.train()
+        for step, train_data in enumerate(train_loader):
             step_start_time = time.time()
 
-            batch_images, batch_labels = batch_data["image"], batch_data["label"]
-            batch_images, batch_labels = batch_images.to(device), batch_labels.to(device)
+            train_images, train_labels = train_data["image"], train_data["label"]
+            train_images, train_labels = train_images.to(device), train_labels.to(device)
 
             optimizer.zero_grad()
-            outputs = yolo_v4(batch_images)
-            target = gt(labels=batch_labels)
+            outputs = yolo_v4(train_images)
+            target = gt(labels=train_labels)
             ciou_loss, conf_loss, prob_loss = loss_object(y_pred=outputs, y_true=target)
             total_loss = ciou_loss + conf_loss + prob_loss
 
@@ -102,6 +110,24 @@ if __name__ == '__main__':
         prob_mean.reset()
 
         scheduler.step()
+
+        # validation
+        yolo_v4.eval()
+        valid_loss = 0
+        length = 0
+        with torch.no_grad():
+            for i, valid_data in enumerate(valid_loader):
+                length += 1
+                valid_images, valid_labels = valid_data["image"], valid_data["label"]
+                valid_images, valid_labels = valid_images.to(device), valid_labels.to(device)
+
+                outputs = yolo_v4(valid_images)
+                target = gt(labels=valid_labels)
+                ciou_loss, conf_loss, prob_loss = loss_object(y_pred=outputs, y_true=target)
+                valid_loss += ciou_loss.item() + conf_loss.item() + prob_loss.item()
+        print("Epoch: {}/{}, valid set: loss: {}".format(epoch,
+                                                         Config.epochs,
+                                                         valid_loss / length))
 
         if epoch % Config.save_frequency == 0:
             torch.save(yolo_v4.state_dict(), Config.save_model_dir + "epoch-{}.pth".format(epoch))
