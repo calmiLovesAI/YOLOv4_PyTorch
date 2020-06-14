@@ -51,8 +51,7 @@ class Config:
     class_file_dir = ""
     class_from_file = False
 
-    max_boxes_per_image = 50
-    max_bbox_per_level = 150
+    max_boxes_per_image = 150
 
     ignore_threshold = 0.5
 
