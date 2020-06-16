@@ -82,6 +82,7 @@ class KMeans:
 
 if __name__ == '__main__':
     anchors = KMeans(label_dir=Config.txt_file_dir, anchor_num=9).generate_anchors()
+    print(anchors)
     anchors_str = ""
     for i in range(anchors.shape[0]):
         if i:
