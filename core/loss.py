@@ -28,10 +28,17 @@ class YoloLoss(nn.Module):
             prob_loss += prob
         return ciou_loss, conf_loss, prob_loss
 
+    @staticmethod
+    def __tensor_or(x, dim):
+        x = x.to(torch.float32)
+        max_value, _ = torch.max(x, dim=dim)
+        y = max_value.to(torch.bool)
+        return y
+
     def __single_level_loss(self, label, feature, index):
         N, C, H, W = feature.size()
         feature = feature.permute(0, 2, 3, 1)
-        feature_reshaped = torch.reshape(feature, (N, H, W, Config.anchor_num_per_level, -1))
+        feature_reshaped = torch.reshape(feature, (N, H, W, 3, -1))
         raw_xywh = feature_reshaped[..., 0:4]
         raw_conf = feature_reshaped[..., 4:5]
         raw_prob = feature_reshaped[..., 5:]
@@ -47,23 +54,23 @@ class YoloLoss(nn.Module):
         ciou = torch.unsqueeze(CIoU(box_1=pred_xywh, box_2=label_xywh).calculate_ciou(), dim=-1)
         ciou_loss = label_conf * bbox_loss_scale * (1 - ciou)
 
-        ignore_mask_list = []
+        iou_over_threshold_mask = torch.zeros(N, H, W, 3, dtype=torch.float32, device=self.device)
         for b in range(N):
             true_bboxes = label_xywh[b][label_conf[b][..., 0] != 0.0]
-            pred_xywh_b = torch.unsqueeze(pred_xywh[b], dim=3)
-            for _ in range(3):
-                true_bboxes = torch.unsqueeze(true_bboxes, dim=0)
-            iou = IoU(box_1=pred_xywh_b, box_2=true_bboxes).calculate_iou()
-            max_iou = torch.zeros(iou.size()[:3], dtype=torch.float32, device=self.device)
-            if iou.size()[-1] != 0:
-                max_iou, _ = torch.max(iou, dim=-1)
-            ignore_mask = max_iou < self.ignore_threshold
-            ignore_mask_list.append(ignore_mask.to(torch.float32))
-        ignore_mask_tensor = torch.stack(ignore_mask_list, dim=0)
-        ignore_mask_tensor = torch.unsqueeze(ignore_mask_tensor, dim=-1)  # shape: (batch_size, feature_size, feature_size, 3, 1)
+            if true_bboxes.size()[0]:
+                pred_xywh_b = torch.unsqueeze(pred_xywh[b], dim=3)
+                for _ in range(3):
+                    true_bboxes = torch.unsqueeze(true_bboxes, dim=0)
+                iou = IoU(box_1=pred_xywh_b, box_2=true_bboxes).calculate_iou()
+                iou_mask = torch.gt(iou, self.ignore_threshold)
+                iou_mask = YoloLoss.__tensor_or(iou_mask, dim=-1)
+                iou_over_threshold_mask[b][iou_mask] = 1.0
+        negative_mask = torch.lt(label_conf, 0.5)
+        iou_over_threshold_mask = torch.unsqueeze(iou_over_threshold_mask, dim=-1)
+        ignore_mask = torch.logical_and(negative_mask, iou_over_threshold_mask)
 
-        conf_loss = label_conf * F.binary_cross_entropy_with_logits(input=raw_conf, target=label_conf, reduction="none") + \
-                    (1 - label_conf) * ignore_mask_tensor * F.binary_cross_entropy_with_logits(input=raw_conf, target=label_conf, reduction="none")
+        conf_loss = (label_conf * F.binary_cross_entropy_with_logits(input=raw_conf, target=label_conf, reduction="none") + \
+                    (1 - label_conf) * F.binary_cross_entropy_with_logits(input=raw_conf, target=label_conf, reduction="none")) * torch.logical_not(ignore_mask)
         prob_loss = label_conf * F.binary_cross_entropy_with_logits(input=raw_prob, target=label_prob, reduction="none")
 
         ciou_loss = torch.sum(ciou_loss, dim=(1, 2, 3, 4))
