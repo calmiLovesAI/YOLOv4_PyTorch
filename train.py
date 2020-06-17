@@ -141,3 +141,4 @@ if __name__ == '__main__':
 
     torch.save(yolo_v4.state_dict(), Config.save_model_dir + "saved_model.pth")
 
+    torch.save(yolo_v4, Config.save_model_dir + "entire_model.pth")
