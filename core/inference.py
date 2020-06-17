@@ -91,17 +91,17 @@ class Inference:
         pred_xyxy = torch.cat(tensors=(torch.max(pred_xyxy[:, :2], torch.tensor(data=(0, 0), dtype=torch.float32, device=self.device)),
                                        torch.min(pred_xyxy[:, 2:], torch.tensor(data=(self.image_size[1] - 1, self.image_size[0] - 1), dtype=torch.float32, device=self.device))),
                               dim=-1)
-        invalid_mask = (pred_xyxy[:, 0] > pred_xyxy[:, 2]) | (pred_xyxy[:, 1] > pred_xyxy[:, 3])
+        invalid_mask = torch.logical_or(torch.gt(pred_xyxy[:, 0], pred_xyxy[:, 2]), torch.gt(pred_xyxy[:, 1], pred_xyxy[:, 3]))
         pred_xyxy[invalid_mask] = 0
 
         bbox_area = (pred_xyxy[:, 2] - pred_xyxy[:, 0]) * (pred_xyxy[:, 3] - pred_xyxy[:, 1])
-        area_mask = bbox_area > 0
+        area_mask = torch.gt(bbox_area, 0)
 
         classes = torch.argmax(pred_prob, dim=-1)
         scores = pred_conf * pred_prob[torch.arange(len(pred_xyxy)), classes]
-        score_mask = scores > self.score_threshold
+        score_mask = torch.gt(scores, self.score_threshold)
 
-        mask = area_mask & score_mask
+        mask = torch.logical_and(area_mask, score_mask)
         bboxes_tensor, scores_tensor, classes_tensor = pred_xyxy[mask], scores[mask], classes[mask]
 
         return bboxes_tensor, scores_tensor, classes_tensor
