@@ -78,13 +78,8 @@ class COCO:
 
     def __category_id_transform(self, original_id):
         category_id_dict = COCO.__get_category_id_information(self.train_dict)
-        original_name = "none"
-        for category_name, category_id in category_id_dict.items():
-            if category_id == original_id:
-                original_name = category_name
-        if original_name == "none":
-            raise ValueError("An error occurred while transforming the category id.")
-        return Config.class2idx()[original_name]
+        id2category = dict((v, k) for k, v in category_id_dict.items())
+        return Config.class2idx()[id2category[original_id]]
 
     @staticmethod
     def __bbox_str(bboxes):
