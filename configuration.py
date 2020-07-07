@@ -37,8 +37,8 @@ class Config:
     num_yolo_outputs = len(yolo_strides)
 
     # dataset
-    dataset_type = "voc"
-    num_classes = 20
+    dataset_type = "coco"  # "voc" or "coco"
+    num_classes = 80   # 20 for voc and 80 for coco
     pascal_voc_root = "./data/datasets/VOCdevkit/VOC2012/"
     pascal_voc_images = pascal_voc_root + "JPEGImages"
     pascal_voc_labels = pascal_voc_root + "Annotations"
@@ -47,6 +47,28 @@ class Config:
                           6: "sheep", 7: "aeroplane", 8: "bicycle", 9: "boat", 10: "bus",
                           11: "car", 12: "motorbike", 13: "train", 14: "bottle", 15: "chair",
                           16: "diningtable", 17: "pottedplant", 18: "sofa", 19: "tvmonitor"}
+
+    coco_root = "./data/datasets/COCO/2017/"
+    coco_images = coco_root + "train2017/"
+    coco_annotations = coco_root + "annotations/instances_train2017.json"
+
+    coco_classes = {0: "person", 1: "bicycle", 2: "car", 3: "motorcycle", 4: "airplane",
+                    5: "bus", 6: "train", 7: "truck", 8: "boat", 9: "traffic light",
+                    10: "fire hydrant", 11: "stop sign", 12: "parking meter", 13: "bench",
+                    14: "bird", 15: "cat", 16: "dog", 17: "horse", 18: "sheep", 19: "cow",
+                    20: "elephant", 21: "bear", 22: "zebra", 23: "giraffe", 24: "backpack",
+                    25: "umbrella", 26: "handbag", 27: "tie", 28: "suitcase", 29: "frisbee",
+                    30: "skis", 31: "snowboard", 32: "sports ball", 33: "kite", 34: "baseball bat",
+                    35: "baseball glove", 36: "skateboard", 37: "surfboard", 38: "tennis racket",
+                    39: "bottle", 40: "wine glass", 41: "cup", 42: "fork", 43: "knife", 44: "spoon",
+                    45: "bowl", 46: "banana", 47: "apple", 48: "sandwich", 49: "orange", 50: "broccoli",
+                    51: "carrot", 52: "hot dog", 53: "pizza", 54: "donut", 55: "cake", 56: "chair",
+                    57: "couch", 58: "potted plant", 59: "bed", 60: "dining table", 61: "toilet",
+                    62: "tv", 63: "laptop", 64: "mouse", 65: "remote", 66: "keyboard", 67: "cell phone",
+                    68: "microwave", 69: "oven", 70: "toaster", 71: "sink", 72: "refrigerator",
+                    73: "book", 74: "clock", 75: "vase", 76: "scissors", 77: "teddy bear",
+                    78: "hair drier", 79: "toothbrush"}
+
     class_file_dir = ""
     class_from_file = False
 
@@ -81,5 +103,10 @@ class Config:
             with open(file=cls.class_file_dir, mode="r", encoding="utf-8") as f:
                 class_names = dict((i, name.strip("\n")) for i, name in enumerate(f.readlines()))
         else:
-            class_names = cls.pascal_voc_classes
+            if cls.dataset_type == "voc":
+                class_names = cls.pascal_voc_classes
+            elif cls.dataset_type == "coco":
+                class_names = cls.coco_classes
+            else:
+                raise ValueError("Wrong dataset_type!")
         return class_names

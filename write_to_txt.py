@@ -1,4 +1,5 @@
 from data.voc import VOC
+from data.coco import COCO
 from configuration import Config
 
 
@@ -23,3 +24,6 @@ if __name__ == '__main__':
     if Config.dataset_type == "voc":
         dataset = VOC()
         generate_txt(dataset=dataset)
+    elif Config.dataset_type == "coco":
+        parse_coco = COCO()
+        parse_coco.write_data_to_txt(txt_dir=Config.txt_file_dir)
