@@ -7,6 +7,9 @@ class Config:
 
     input_size = (416, 416)
 
+    initial_learning_rate = 1e-3
+    MultiStepLR_milestones = [500, 2000]
+
     # save model
     save_model_dir = "./saved_model/"
     save_frequency = 20

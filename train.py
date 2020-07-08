@@ -52,8 +52,8 @@ if __name__ == '__main__':
     loss_object = YoloLoss(device=device)
 
     # optimizer
-    optimizer = optim.AdamW(params=yolo_v4.parameters(), lr=1e-3)
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer=optimizer, milestones=[500, 2000], gamma=0.1)
+    optimizer = optim.AdamW(params=yolo_v4.parameters(), lr=Config.initial_learning_rate)
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer=optimizer, milestones=Config.MultiStepLR_milestones, gamma=0.1)
 
     ciou_mean = MeanMetric()
     conf_mean = MeanMetric()
